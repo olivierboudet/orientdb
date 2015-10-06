@@ -1800,8 +1800,8 @@ public class CRUDObjectPhysicalTest extends ObjectDBBaseTest {
     boolean throwedEx = false;
     try {
       p.getList().add(new Object());
-    } catch (Throwable ose) {
-      if (ose instanceof ODatabaseException && ose.getCause() instanceof OSerializationException)
+    } catch (Exception ose) {
+      if (ose instanceof OSerializationException || ose.getCause() instanceof OSerializationException)
         throwedEx = true;
     }
     Assert.assertTrue(throwedEx);
@@ -2295,8 +2295,6 @@ public class CRUDObjectPhysicalTest extends ObjectDBBaseTest {
 
       List<Profile> result = database.command(query).execute(params);
       Assert.fail();
-    } catch (OResponseProcessingException e) {
-      Assert.assertTrue(e.getCause() instanceof OQueryParsingException);
     } catch (OCommandSQLParsingException e) {
       Assert.assertTrue(true);
     }

@@ -47,7 +47,6 @@ import com.orientechnologies.orient.core.cache.OLocalRecordCacheFactoryImpl;
 import com.orientechnologies.orient.core.command.script.OScriptManager;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.conflict.ORecordConflictStrategyFactory;
-import com.orientechnologies.orient.core.db.ODatabaseFactory;
 import com.orientechnologies.orient.core.db.ODatabaseLifecycleListener;
 import com.orientechnologies.orient.core.db.ODatabaseThreadLocalFactory;
 import com.orientechnologies.orient.core.engine.OEngine;
@@ -70,7 +69,6 @@ public class Orient extends OListenerManger<OOrientListener> {
   private final ConcurrentHashMap<Integer, Boolean>                                  storageIds                    = new ConcurrentHashMap<Integer, Boolean>();
 
   private final Map<ODatabaseLifecycleListener, ODatabaseLifecycleListener.PRIORITY> dbLifecycleListeners          = new LinkedHashMap<ODatabaseLifecycleListener, ODatabaseLifecycleListener.PRIORITY>();
-  private final ODatabaseFactory                                                     databaseFactory               = new ODatabaseFactory();
   private final OScriptManager                                                       scriptManager                 = new OScriptManager();
   private final ThreadGroup                                                          threadGroup;
   private final AtomicInteger                                                        serialId                      = new AtomicInteger();
@@ -277,10 +275,6 @@ public class Orient extends OListenerManger<OOrientListener> {
 
       OLogManager.instance().debug(this, "Orient Engine is shutting down...");
 
-      if (databaseFactory != null)
-        // CLOSE ALL DATABASES
-        databaseFactory.shutdown();
-
       closeAllStorages();
 
       // SHUTDOWN ENGINES
@@ -318,7 +312,7 @@ public class Orient extends OListenerManger<OOrientListener> {
           }
 
         } catch (Exception e) {
-          OLogManager.instance().error(this, "Error during orient shutdown.", e);
+          OLogManager.instance().error(this, "Error during orient shutdown", e);
         }
 
       // CALL THE SHUTDOWN ON ALL THE LISTENERS
@@ -327,7 +321,7 @@ public class Orient extends OListenerManger<OOrientListener> {
           try {
             l.onShutdown();
           } catch (Exception e) {
-            OLogManager.instance().error(this, "Error during orient shutdown.", e);
+            OLogManager.instance().error(this, "Error during orient shutdown", e);
           }
 
       }
@@ -343,23 +337,29 @@ public class Orient extends OListenerManger<OOrientListener> {
     return this;
   }
 
-  public void scheduleTask(TimerTask task, long delay, long period) {
+  public void scheduleTask(final TimerTask task, final long delay, final long period) {
     engineLock.readLock().lock();
     try {
-      if (active)
-        timer.schedule(task, delay, period);
-      else
+      if (active) {
+        if (period > 0)
+          timer.schedule(task, delay, period);
+        else
+          timer.schedule(task, delay);
+      } else
         OLogManager.instance().warn(this, "OrientDB engine is down. Task will not be scheduled.");
     } finally {
       engineLock.readLock().unlock();
     }
   }
 
-  public void scheduleTask(TimerTask task, Date firstTime, long period) {
+  public void scheduleTask(final TimerTask task, final Date firstTime, final long period) {
     engineLock.readLock().lock();
     try {
       if (active)
-        timer.schedule(task, firstTime, period);
+        if (period > 0)
+          timer.schedule(task, firstTime, period);
+        else
+          timer.schedule(task, firstTime);
       else
         OLogManager.instance().warn(this, "OrientDB engine is down. Task will not be scheduled.");
     } finally {
@@ -518,21 +518,6 @@ public class Orient extends OListenerManger<OOrientListener> {
     return os.indexOf("win") >= 0;
   }
 
-  public OStorage registerStorage(OStorage storage) throws IOException {
-    engineLock.readLock().lock();
-    try {
-      for (OOrientListener l : browseListeners())
-        l.onStorageRegistered(storage);
-
-      OStorage oldStorage = storages.putIfAbsent(storage.getName(), storage);
-      if (oldStorage != null)
-        storage = oldStorage;
-
-      return storage;
-    } finally {
-      engineLock.readLock().unlock();
-    }
-  }
 
   public OStorage getStorage(final String dbName) {
     engineLock.readLock().lock();
@@ -694,10 +679,6 @@ public class Orient extends OListenerManger<OOrientListener> {
 
   public void setRecordFactoryManager(final ORecordFactoryManager iRecordFactoryManager) {
     recordFactoryManager = iRecordFactoryManager;
-  }
-
-  public ODatabaseFactory getDatabaseFactory() {
-    return databaseFactory;
   }
 
   public OProfiler getProfiler() {

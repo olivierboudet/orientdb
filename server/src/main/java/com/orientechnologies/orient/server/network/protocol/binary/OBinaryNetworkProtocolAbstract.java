@@ -19,6 +19,10 @@
  */
 package com.orientechnologies.orient.server.network.protocol.binary;
 
+import java.io.IOException;
+import java.net.Socket;
+import java.util.logging.Level;
+
 import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.orient.core.Orient;
@@ -63,10 +67,6 @@ import com.orientechnologies.orient.server.OTokenHandler;
 import com.orientechnologies.orient.server.network.OServerNetworkListener;
 import com.orientechnologies.orient.server.network.protocol.ONetworkProtocol;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.util.logging.Level;
-
 /**
  * Abstract base class for binary network implementations.
  *
@@ -80,6 +80,7 @@ public abstract class OBinaryNetworkProtocolAbstract extends ONetworkProtocol {
   protected volatile int         requestType;
   protected int                  clientTxId;
   protected OToken               token;
+  protected byte[]               tokenBytes;
   protected boolean              okSent;
   protected OTokenHandler        tokenHandler;
 
@@ -94,14 +95,7 @@ public abstract class OBinaryNetworkProtocolAbstract extends ONetworkProtocol {
       final OContextConfiguration iConfig) throws IOException {
     server = iServer;
     channel = new OChannelBinaryServer(iSocket, iConfig);
-
-    try {
-      tokenHandler = server.getPlugin(OTokenHandler.TOKEN_HANDLER_NAME);
-      if (tokenHandler != null && !tokenHandler.isEnabled())
-        tokenHandler = null;
-    } catch (ODatabaseException e) {
-      OLogManager.instance().debug(this, "Error on retrieving plugin '%s'", e, OTokenHandler.TOKEN_HANDLER_NAME);
-    }
+    tokenHandler = iServer.getTokenHandler();
   }
 
   @Override
@@ -239,8 +233,8 @@ public abstract class OBinaryNetworkProtocolAbstract extends ONetworkProtocol {
     } catch (Throwable t) {
       sendErrorOrDropConnection(clientTxId, t);
     } finally {
-      Orient.instance().getProfiler()
-          .stopChrono("server.network.requests", "Total received requests", timer, "server.network.requests");
+      Orient.instance().getProfiler().stopChrono("server.network.requests", "Total received requests", timer,
+          "server.network.requests");
 
       OSerializationThreadLocal.INSTANCE.get().clear();
     }
@@ -285,12 +279,9 @@ public abstract class OBinaryNetworkProtocolAbstract extends ONetworkProtocol {
       }
     }
 
-    OLogManager.instance().info(
-        this,
-        "Created database '%s' of type '%s'",
-        iDatabase.getName(),
-        iDatabase.getStorage().getUnderlying() instanceof OAbstractPaginatedStorage ? iDatabase.getStorage().getUnderlying()
-            .getType() : "memory");
+    OLogManager.instance().info(this, "Created database '%s' of type '%s'", iDatabase.getName(),
+        iDatabase.getStorage().getUnderlying() instanceof OAbstractPaginatedStorage
+            ? iDatabase.getStorage().getUnderlying().getType() : "memory");
 
     // if (iDatabase.getStorage() instanceof OStorageLocal)
     // // CLOSE IT BECAUSE IT WILL BE OPEN AT FIRST USE
@@ -325,7 +316,7 @@ public abstract class OBinaryNetworkProtocolAbstract extends ONetworkProtocol {
     } else
       throw new IllegalArgumentException("Cannot create database: storage mode '" + storageType + "' is not supported.");
 
-    return Orient.instance().getDatabaseFactory().createDatabase(dbType, path);
+    return new ODatabaseDocumentTx(path);
   }
 
   protected int deleteRecord(final ODatabaseDocument iDatabase, final ORID rid, final ORecordVersion version) {
@@ -385,7 +376,6 @@ public abstract class OBinaryNetworkProtocolAbstract extends ONetworkProtocol {
     } else
       currentRecord = newRecord;
 
-    
     currentRecord.getRecordVersion().copyFrom(version);
 
     iDatabase.save(currentRecord);
@@ -448,7 +438,7 @@ public abstract class OBinaryNetworkProtocolAbstract extends ONetworkProtocol {
       final String message = "Error on unmarshalling record " + iRecord.getIdentity().toString() + " (" + e + ")";
       OLogManager.instance().error(this, message, e);
 
-      throw new OSerializationException(message, e);
+      throw OException.wrapException(new OSerializationException(message), e);
     }
   }
 
@@ -474,4 +464,7 @@ public abstract class OBinaryNetworkProtocolAbstract extends ONetworkProtocol {
     return requestType;
   }
 
+  public byte[] getTokenBytes() {
+    return tokenBytes;
+  }
 }

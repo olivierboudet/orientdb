@@ -81,12 +81,6 @@ public interface OFile {
 
   void write(long iOffset, byte[] iSourceBuffer) throws IOException;
 
-  void setSoftlyClosed(boolean b) throws IOException;
-
-  boolean wasSoftlyClosed() throws IOException;
-
-  boolean isSoftlyClosed() throws IOException;
-
   void lock() throws IOException;
 
   void unlock() throws IOException;

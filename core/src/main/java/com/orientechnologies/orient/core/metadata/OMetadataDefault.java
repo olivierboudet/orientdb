@@ -22,6 +22,7 @@ package com.orientechnologies.orient.core.metadata;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.common.profiler.OProfiler;
 import com.orientechnologies.orient.core.Orient;
@@ -44,30 +45,34 @@ import com.orientechnologies.orient.core.metadata.schema.OSchemaShared;
 import com.orientechnologies.orient.core.metadata.security.OSecurity;
 import com.orientechnologies.orient.core.metadata.security.OSecurityProxy;
 import com.orientechnologies.orient.core.metadata.security.OSecurityShared;
+import com.orientechnologies.orient.core.metadata.sequence.OSequenceLibrary;
+import com.orientechnologies.orient.core.metadata.sequence.OSequenceLibraryImpl;
+import com.orientechnologies.orient.core.metadata.sequence.OSequenceLibraryProxy;
 import com.orientechnologies.orient.core.schedule.OSchedulerListener;
 import com.orientechnologies.orient.core.schedule.OSchedulerListenerImpl;
 import com.orientechnologies.orient.core.schedule.OSchedulerListenerProxy;
 import com.orientechnologies.orient.core.storage.OStorageProxy;
 
 public class OMetadataDefault implements OMetadataInternal {
-  public static final String            CLUSTER_INTERNAL_NAME     = "internal";
-  public static final String            CLUSTER_INDEX_NAME        = "index";
-  public static final String            CLUSTER_MANUAL_INDEX_NAME = "manindex";
+  public static final String        CLUSTER_INTERNAL_NAME     = "internal";
+  public static final String        CLUSTER_INDEX_NAME        = "index";
+  public static final String        CLUSTER_MANUAL_INDEX_NAME = "manindex";
 
-  protected int                         schemaClusterId;
+  protected int                     schemaClusterId;
 
-  protected OSchemaProxy                schema;
-  protected OSecurity                   security;
-  protected OIndexManagerProxy          indexManager;
-  protected OFunctionLibraryProxy       functionLibrary;
-  protected OSchedulerListenerProxy     scheduler;
+  protected OSchemaProxy            schema;
+  protected OSecurity               security;
+  protected OIndexManagerProxy      indexManager;
+  protected OFunctionLibraryProxy   functionLibrary;
+  protected OSchedulerListenerProxy scheduler;
+  protected OSequenceLibraryProxy   sequenceLibrary;
 
-  protected OCommandCache               commandCache;
-  protected static final OProfiler      PROFILER                  = Orient.instance().getProfiler();
+  protected OCommandCache           commandCache;
+  protected static final OProfiler  PROFILER                  = Orient.instance().getProfiler();
 
-  private OImmutableSchema              immutableSchema           = null;
-  private int                           immutableCount            = 0;
-  private ODatabaseDocumentInternal     database;
+  private OImmutableSchema          immutableSchema           = null;
+  private int                       immutableCount            = 0;
+  private ODatabaseDocumentInternal database;
 
   public OMetadataDefault() {
   }
@@ -98,8 +103,13 @@ public class OMetadataDefault implements OMetadataInternal {
     indexManager.create();
     security.create();
     functionLibrary.create();
+    sequenceLibrary.create();
     security.createClassTrigger();
     scheduler.create();
+
+    // CREATE BASE VERTEX AND EDGE CLASSES
+    schema.createClass("V");
+    schema.createClass("E");
   }
 
   public OSchemaProxy getSchema() {
@@ -212,15 +222,27 @@ public class OMetadataDefault implements OMetadataInternal {
         security = securityClass.getDeclaredConstructor(OSecurity.class, ODatabaseDocumentInternal.class).newInstance(wrapped,
             database);
       } catch (Exception e) {
-        throw new OSecurityException("Cannot install custom security implementation (" + securityClass + ")", e);
+        throw OException.wrapException(new OSecurityException("Cannot install custom security implementation (" + securityClass
+            + ")"), e);
       }
 
     functionLibrary = new OFunctionLibraryProxy(database.getStorage().getResource(OFunctionLibrary.class.getSimpleName(),
         new Callable<OFunctionLibrary>() {
           public OFunctionLibrary call() {
             final OFunctionLibraryImpl instance = new OFunctionLibraryImpl();
-            if (iLoad)
+            if (iLoad && !(database.getStorage() instanceof OStorageProxy))
               instance.load();
+            return instance;
+          }
+        }), database);
+    sequenceLibrary = new OSequenceLibraryProxy(database.getStorage().getResource(OSequenceLibrary.class.getSimpleName(),
+        new Callable<OSequenceLibrary>() {
+          @Override
+          public OSequenceLibrary call() throws Exception {
+            final OSequenceLibraryImpl instance = new OSequenceLibraryImpl();
+            if (iLoad) {
+              instance.load();
+            }
             return instance;
           }
         }), database);
@@ -228,7 +250,7 @@ public class OMetadataDefault implements OMetadataInternal {
         new Callable<OSchedulerListener>() {
           public OSchedulerListener call() {
             final OSchedulerListenerImpl instance = new OSchedulerListenerImpl();
-            if (iLoad)
+            if (iLoad && !(database.getStorage() instanceof OStorageProxy))
               instance.load();
             return instance;
           }
@@ -247,6 +269,8 @@ public class OMetadataDefault implements OMetadataInternal {
       security.load();
     if (functionLibrary != null)
       functionLibrary.load();
+    if (sequenceLibrary != null)
+      sequenceLibrary.load();
     if (commandCache != null)
       commandCache.clear();
   }
@@ -269,6 +293,11 @@ public class OMetadataDefault implements OMetadataInternal {
 
   public OFunctionLibrary getFunctionLibrary() {
     return functionLibrary;
+  }
+
+  @Override
+  public OSequenceLibrary getSequenceLibrary() {
+    return sequenceLibrary;
   }
 
   public OSchedulerListener getSchedulerListener() {

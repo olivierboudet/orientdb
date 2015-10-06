@@ -20,6 +20,7 @@
 package com.orientechnologies.orient.core.exception;
 
 import com.orientechnologies.common.concur.ONeedRetryException;
+import com.orientechnologies.common.exception.OHighLevelException;
 import com.orientechnologies.orient.core.db.record.ORecordOperation;
 import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.id.ORecordId;
@@ -32,7 +33,7 @@ import com.orientechnologies.orient.core.version.OVersionFactory;
  * @author Luca Garulli (l.garulli--at--orientechnologies.com)
  * 
  */
-public class OConcurrentModificationException extends ONeedRetryException {
+public class OConcurrentModificationException extends ONeedRetryException implements OHighLevelException {
 
   private static final String MESSAGE_OPERATION      = "are";
   private static final String MESSAGE_RECORD_VERSION = "your=v";
@@ -45,36 +46,23 @@ public class OConcurrentModificationException extends ONeedRetryException {
   private ORecordVersion      recordVersion          = OVersionFactory.instance().createVersion();
   private int                 recordOperation;
 
-  /**
-   * Default constructor for OFastConcurrentModificationException
-   */
-  protected OConcurrentModificationException() {
-    rid = new ORecordId();
+  public OConcurrentModificationException(OConcurrentModificationException exception) {
+    super(exception);
+
+    this.rid = exception.rid;
+    this.recordVersion = exception.recordVersion;
+    this.databaseVersion = exception.databaseVersion;
+    this.recordOperation = exception.recordOperation;
   }
 
-  public OConcurrentModificationException(final String message) {
-    int beginPos = message.indexOf(ORID.PREFIX);
-    int endPos = message.indexOf(' ', beginPos);
-    rid = new ORecordId(message.substring(beginPos, endPos));
-
-    // EXTRACT THE OPERATION
-    beginPos = message.indexOf(MESSAGE_OPERATION, endPos) + MESSAGE_OPERATION.length() + 1;
-    endPos = message.indexOf("ing", beginPos);
-    recordOperation = ORecordOperation.getId(message.substring(beginPos, endPos).toUpperCase() + "E");
-
-    // EXTRACT THE DB VERSION
-    beginPos = message.indexOf(MESSAGE_DB_VERSION, endPos) + MESSAGE_DB_VERSION.length();
-    endPos = message.indexOf(' ', beginPos);
-    databaseVersion.getSerializer().fromString(message.substring(beginPos, endPos), databaseVersion);
-
-    // EXTRACT MY VERSION
-    beginPos = message.indexOf(MESSAGE_RECORD_VERSION, endPos) + MESSAGE_RECORD_VERSION.length();
-    endPos = message.indexOf(')', beginPos);
-    recordVersion.getSerializer().fromString(message.substring(beginPos, endPos), recordVersion);
+  protected OConcurrentModificationException(String message) {
+    super(message);
   }
 
   public OConcurrentModificationException(final ORID iRID, final ORecordVersion iDatabaseVersion,
       final ORecordVersion iRecordVersion, final int iRecordOperation) {
+    super(makeMessage(iRecordOperation, iRID, iDatabaseVersion, iRecordVersion));
+
     if (OFastConcurrentModificationException.enabled())
       throw new IllegalStateException("Fast-throw is enabled. Use OFastConcurrentModificationException.instance() instead");
 
@@ -114,7 +102,7 @@ public class OConcurrentModificationException extends ONeedRetryException {
     return rid;
   }
 
-  public String getMessage() {
+  private static String makeMessage(int recordOperation, ORID rid, ORecordVersion databaseVersion, ORecordVersion recordVersion) {
     final String operation = ORecordOperation.getName(recordOperation);
 
     final StringBuilder sb = new StringBuilder();

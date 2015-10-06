@@ -1,7 +1,9 @@
 package com.orientechnologies.orient.core.sql.parser;
 
 import com.orientechnologies.orient.core.command.OCommandContext;
+import com.orientechnologies.orient.core.db.ODatabaseDocumentInternal;
 import com.orientechnologies.orient.core.db.record.OIdentifiable;
+import com.orientechnologies.orient.core.metadata.schema.OClass;
 
 import java.util.Collections;
 import java.util.List;
@@ -104,4 +106,23 @@ public abstract class OBooleanExpression extends SimpleNode {
      * @return the sub-expressions that have to be calculated using an external engine (eg. LUCENE)
      */
     protected abstract List<Object> getExternalCalculationConditions();
+
+  public List<OBinaryCondition> getIndexedFunctionConditions(OClass iSchemaClass, ODatabaseDocumentInternal database) {
+    return null;
   }
+
+  public List<OAndBlock> flatten() {
+
+    return Collections.singletonList(encapsulateInAndBlock(this));
+  }
+
+  protected OAndBlock encapsulateInAndBlock(OBooleanExpression item) {
+    if(item instanceof OAndBlock){
+      return (OAndBlock)item;
+    }
+    OAndBlock result = new OAndBlock(-1);
+    result.subBlocks.add(item);
+    return result;
+  }
+
+}

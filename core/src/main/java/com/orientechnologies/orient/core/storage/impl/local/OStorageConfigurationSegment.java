@@ -19,6 +19,8 @@
  */
 package com.orientechnologies.orient.core.storage.impl.local;
 
+import com.orientechnologies.common.exception.OException;
+import com.orientechnologies.orient.core.config.OContextConfiguration;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.config.OStorageConfiguration;
 import com.orientechnologies.orient.core.config.OStorageFileConfiguration;
@@ -50,6 +52,8 @@ public class OStorageConfigurationSegment extends OStorageConfiguration {
   }
 
   public void close() throws IOException {
+    super.close();
+
     segment.close();
   }
 
@@ -65,6 +69,8 @@ public class OStorageConfigurationSegment extends OStorageConfiguration {
   @Override
   public OStorageConfiguration load(final Map<String, Object> iProperties) throws OSerializationException {
     try {
+      initConfiguration();
+
       bindPropertiesToContext(iProperties);
 
       if (segment.getFile().exists())
@@ -87,8 +93,10 @@ public class OStorageConfigurationSegment extends OStorageConfiguration {
       segment.getFile().read(OBinaryProtocol.SIZE_INT, buffer, size);
 
       fromStream(buffer);
+
     } catch (IOException e) {
-      throw new OSerializationException("Cannot load database's configuration. The database seems to be corrupted.", e);
+      throw OException.wrapException(new OSerializationException(
+          "Cannot load database's configuration. The database seems to be corrupted"), e);
     }
     return this;
   }
@@ -125,7 +133,7 @@ public class OStorageConfigurationSegment extends OStorageConfiguration {
         f.synch();
 
     } catch (Exception e) {
-      throw new OSerializationException("Error on update storage configuration", e);
+      throw OException.wrapException(new OSerializationException("Error on update storage configuration"), e);
     }
   }
 
@@ -135,6 +143,9 @@ public class OStorageConfigurationSegment extends OStorageConfiguration {
 
   @Override
   public void setSoftlyClosed(boolean softlyClosed) throws IOException {
-    segment.getFile().setSoftlyClosed(softlyClosed);
+  }
+
+  public String getFileName() {
+    return segment.getFile().getName();
   }
 }

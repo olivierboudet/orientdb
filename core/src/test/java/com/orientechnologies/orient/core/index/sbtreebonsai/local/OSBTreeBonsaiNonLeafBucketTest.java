@@ -2,13 +2,14 @@ package com.orientechnologies.orient.core.index.sbtreebonsai.local;
 
 import java.util.*;
 
+import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
+import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.cache.OCachePointer;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.db.record.OIdentifiable;
 import com.orientechnologies.orient.core.serialization.serializer.binary.impl.OLinkSerializer;
@@ -21,18 +22,18 @@ import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODura
 @Test
 public class OSBTreeBonsaiNonLeafBucketTest {
   public void testInitialization() throws Exception {
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(ODurablePage.MAX_PAGE_SIZE_BYTES);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(ODurablePage.MAX_PAGE_SIZE_BYTES);
     OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
 
     OSBTreeBonsaiBucket<Long, OIdentifiable> treeBucket = new OSBTreeBonsaiBucket<Long, OIdentifiable>(cacheEntry, 0, false,
-        OLongSerializer.INSTANCE, OLinkSerializer.INSTANCE, null);
+        OLongSerializer.INSTANCE, OLinkSerializer.INSTANCE, null, null);
     Assert.assertEquals(treeBucket.size(), 0);
     Assert.assertFalse(treeBucket.isLeaf());
 
     treeBucket = new OSBTreeBonsaiBucket<Long, OIdentifiable>(cacheEntry, 0, OLongSerializer.INSTANCE, OLinkSerializer.INSTANCE,
-        null);
+        null, null);
     Assert.assertEquals(treeBucket.size(), 0);
     Assert.assertFalse(treeBucket.isLeaf());
     Assert.assertEquals(treeBucket.getLeftSibling().getPageIndex(), -1);
@@ -52,12 +53,14 @@ public class OSBTreeBonsaiNonLeafBucketTest {
       keys.add(random.nextLong());
     }
 
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(ODurablePage.MAX_PAGE_SIZE_BYTES);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(ODurablePage.MAX_PAGE_SIZE_BYTES);
     OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    cachePointer.incrementReferrer();
+
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
 
     OSBTreeBonsaiBucket<Long, OIdentifiable> treeBucket = new OSBTreeBonsaiBucket<Long, OIdentifiable>(cacheEntry, 0, false,
-        OLongSerializer.INSTANCE, OLinkSerializer.INSTANCE, null);
+        OLongSerializer.INSTANCE, OLinkSerializer.INSTANCE, null, null);
 
     int index = 0;
     Map<Long, Integer> keyIndexMap = new HashMap<Long, Integer>();
@@ -112,12 +115,13 @@ public class OSBTreeBonsaiNonLeafBucketTest {
       keys.add(random.nextLong());
     }
 
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(ODurablePage.MAX_PAGE_SIZE_BYTES);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(ODurablePage.MAX_PAGE_SIZE_BYTES);
     OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    cachePointer.incrementReferrer();
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
 
     OSBTreeBonsaiBucket<Long, OIdentifiable> treeBucket = new OSBTreeBonsaiBucket<Long, OIdentifiable>(cacheEntry, 0, false,
-        OLongSerializer.INSTANCE, OLinkSerializer.INSTANCE, null);
+        OLongSerializer.INSTANCE, OLinkSerializer.INSTANCE, null, null);
 
     int index = 0;
     for (Long key : keys) {

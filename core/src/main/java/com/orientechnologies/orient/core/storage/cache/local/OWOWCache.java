@@ -42,9 +42,11 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import com.orientechnologies.common.concur.lock.ODistributedCounter;
+import com.orientechnologies.common.concur.lock.OInterruptedException;
 import com.orientechnologies.common.concur.lock.ONewLockManager;
 import com.orientechnologies.common.concur.lock.OReadersWriterSpinLock;
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
+import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
 import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.common.serialization.types.OBinarySerializer;
@@ -53,6 +55,7 @@ import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.command.OCommandOutputListener;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.exception.OStorageException;
+import com.orientechnologies.orient.core.exception.OWriteCacheException;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.serialization.serializer.binary.OBinarySerializerFactory;
 import com.orientechnologies.orient.core.storage.OStorageAbstract;
@@ -278,6 +281,19 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
     }
   }
 
+  @Override
+  public int pageSize() {
+    return pageSize;
+  }
+
+  @Override
+  public boolean fileIdsAreEqual(long firsId, long secondId) {
+    final int firstIntId = extractFileId(firsId);
+    final int secondIntId = extractFileId(secondId);
+
+    return firstIntId == secondIntId;
+  }
+
   public long openFile(String fileName) throws IOException {
     filesLock.acquireWriteLock();
     try {
@@ -383,7 +399,7 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
     }
   }
 
-  public void addFile(String fileName, long fileId) throws IOException {
+  public long addFile(String fileName, long fileId) throws IOException {
     filesLock.acquireWriteLock();
     try {
       initNameIdMapping();
@@ -419,6 +435,8 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
       writeNameIdEntry(new NameFileIdEntry(fileName, intId), true);
 
       addFile(fileClassic);
+
+      return composeFileId(id, intId);
     } finally {
       filesLock.releaseWriteLock();
     }
@@ -440,7 +458,8 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
       try {
         future.get();
       } catch (Exception e) {
-        throw new OStorageException("Error during fuzzy checkpoint execution for storage " + storageLocal.getName(), e);
+        throw OException.wrapException(
+            new OStorageException("Error during fuzzy checkpoint execution for storage " + storageLocal.getName()), e);
       }
     }
   }
@@ -551,6 +570,22 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
     }
   }
 
+  @Override
+  public Map<String, Long> files() {
+    filesLock.acquireReadLock();
+    try {
+      final Map<String, Long> result = new HashMap<String, Long>();
+
+      for (Map.Entry<String, Integer> entry : nameIdMap.entrySet()) {
+        result.put(entry.getKey(), composeFileId(id, entry.getValue()));
+      }
+
+      return result;
+    } finally {
+      filesLock.releaseReadLock();
+    }
+  }
+
   public OCachePointer load(long fileId, long pageIndex, boolean addNewPages) throws IOException {
     final int intId = extractFileId(fileId);
 
@@ -600,9 +635,9 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
       future.get();
     } catch (InterruptedException e) {
       Thread.interrupted();
-      throw new OException("File flush was interrupted", e);
+      throw new OInterruptedException("File flush was interrupted");
     } catch (Exception e) {
-      throw new OException("File flush was abnormally terminated", e);
+      throw OException.wrapException(new OWriteCacheException("File flush was abnormally terminated"), e);
     }
   }
 
@@ -657,44 +692,6 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
       return composeFileId(id, fileId);
     } finally {
       filesLock.releaseWriteLock();
-    }
-  }
-
-  public void setSoftlyClosed(long fileId, boolean softlyClosed) throws IOException {
-    final int intId = extractFileId(fileId);
-
-    filesLock.acquireWriteLock();
-    try {
-      OFileClassic fileClassic = files.get(intId);
-      if (fileClassic != null && fileClassic.isOpen())
-        fileClassic.setSoftlyClosed(softlyClosed);
-    } finally {
-      filesLock.releaseWriteLock();
-    }
-  }
-
-  public void setSoftlyClosed(boolean softlyClosed) throws IOException {
-    filesLock.acquireWriteLock();
-    try {
-      for (long fileId : files.keySet())
-        setSoftlyClosed(fileId, softlyClosed);
-    } finally {
-      filesLock.releaseWriteLock();
-    }
-  }
-
-  public boolean wasSoftlyClosed(long fileId) throws IOException {
-    final int intId = extractFileId(fileId);
-
-    filesLock.acquireReadLock();
-    try {
-      OFileClassic fileClassic = files.get(intId);
-      if (fileClassic == null)
-        return false;
-
-      return fileClassic.wasSoftlyClosed();
-    } finally {
-      filesLock.releaseReadLock();
     }
   }
 
@@ -765,12 +762,12 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
       commitExecutor.shutdown();
       try {
         if (!commitExecutor.awaitTermination(5, TimeUnit.MINUTES))
-          throw new OException("Background data flush task can not be stopped.");
+          throw new OWriteCacheException("Background data flush task cannot be stopped.");
       } catch (InterruptedException e) {
         OLogManager.instance().error(this, "Data flush thread was interrupted");
 
         Thread.interrupted();
-        throw new OException("Data flush thread was interrupted", e);
+        throw OException.wrapException(new OWriteCacheException("Data flush thread was interrupted"), e);
       }
     }
 
@@ -926,7 +923,7 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
           nameIdMapHolder.close();
 
           if (!nameIdMapHolderFile.delete())
-            throw new OStorageException("Can not delete disk cache file which contains name-id mapping.");
+            throw new OStorageException("Cannot delete disk cache file which contains name-id mapping.");
         }
 
         nameIdMapHolder = null;
@@ -940,12 +937,12 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
       commitExecutor.shutdown();
       try {
         if (!commitExecutor.awaitTermination(5, TimeUnit.MINUTES))
-          throw new OException("Background data flush task can not be stopped.");
+          throw new OWriteCacheException("Background data flush task cannot be stopped.");
       } catch (InterruptedException e) {
         OLogManager.instance().error(this, "Data flush thread was interrupted");
 
         Thread.interrupted();
-        throw new OException("Data flush thread was interrupted", e);
+        throw new OInterruptedException("Data flush thread was interrupted");
       }
     }
 
@@ -975,13 +972,13 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
         final ObjectName mbeanName = new ObjectName(getMBeanName());
         server.registerMBean(this, mbeanName);
       } catch (MalformedObjectNameException e) {
-        throw new OStorageException("Error during registration of write cache MBean.", e);
+        throw OException.wrapException(new OStorageException("Error during registration of write cache MBean"), e);
       } catch (InstanceAlreadyExistsException e) {
-        throw new OStorageException("Error during registration of write cache MBean.", e);
+        throw OException.wrapException(new OStorageException("Error during registration of write cache MBean"), e);
       } catch (MBeanRegistrationException e) {
-        throw new OStorageException("Error during registration of write cache MBean.", e);
+        throw OException.wrapException(new OStorageException("Error during registration of write cache MBean"), e);
       } catch (NotCompliantMBeanException e) {
-        throw new OStorageException("Error during registration of write cache MBean.", e);
+        throw OException.wrapException(new OStorageException("Error during registration of write cache MBean"), e);
       }
     }
   }
@@ -997,11 +994,11 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
         final ObjectName mbeanName = new ObjectName(getMBeanName());
         server.unregisterMBean(mbeanName);
       } catch (MalformedObjectNameException e) {
-        throw new OStorageException("Error during unregistration of write cache MBean.", e);
+        throw OException.wrapException(new OStorageException("Error during unregistration of write cache MBean"), e);
       } catch (InstanceNotFoundException e) {
-        throw new OStorageException("Error during unregistration of write cache MBean.", e);
+        throw OException.wrapException(new OStorageException("Error during unregistration of write cache MBean"), e);
       } catch (MBeanRegistrationException e) {
-        throw new OStorageException("Error during unregistration of write cache MBean.", e);
+        throw OException.wrapException(new OStorageException("Error during unregistration of write cache MBean"), e);
       }
     }
   }
@@ -1181,9 +1178,9 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
       future.get();
     } catch (InterruptedException e) {
       Thread.interrupted();
-      throw new OException("File data removal was interrupted", e);
+      throw new OInterruptedException("File data removal was interrupted");
     } catch (Exception e) {
-      throw new OException("File data removal was abnormally terminated", e);
+      throw OException.wrapException(new OWriteCacheException("File data removal was abnormally terminated"), e);
     }
   }
 
@@ -1212,12 +1209,12 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
         fileClassic.read(startPosition, content, content.length - 2 * PAGE_PADDING, PAGE_PADDING);
       }
 
-      final ODirectMemoryPointer pointer = new ODirectMemoryPointer(content);
+      final ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(content);
       dataPointer = new OCachePointer(pointer, lastLsn, fileId, pageIndex);
     } else if (fileClassic.getFileSize() >= endPosition) {
       fileClassic.read(startPosition, content, content.length - 2 * PAGE_PADDING, PAGE_PADDING);
 
-      final ODirectMemoryPointer pointer = new ODirectMemoryPointer(content);
+      final ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(content);
       dataPointer = new OCachePointer(pointer, lastLsn, fileId, pageIndex);
     } else
       return null;
@@ -1453,9 +1450,9 @@ public class OWOWCache extends OAbstractWriteCache implements OWriteCache, OCach
 
         lastAmountOfFlushedPages.lazySet(flushedPages);
       } catch (IOException e) {
-        OLogManager.instance().error(this, "Exception during data flush.", e);
+        OLogManager.instance().error(this, "Exception during data flush", e);
       } catch (RuntimeException e) {
-        OLogManager.instance().error(this, "Exception during data flush.", e);
+        OLogManager.instance().error(this, "Exception during data flush", e);
       } finally {
         final long end = System.currentTimeMillis();
         durationOfLastFlush.lazySet(end - start);

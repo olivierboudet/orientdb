@@ -15,12 +15,35 @@
  */
 package com.orientechnologies.orient.core.sql.functions;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.orient.core.exception.OCommandExecutionException;
 import com.orientechnologies.orient.core.sql.functions.coll.*;
 import com.orientechnologies.orient.core.sql.functions.geo.OSQLFunctionDistance;
-import com.orientechnologies.orient.core.sql.functions.math.*;
-import com.orientechnologies.orient.core.sql.functions.misc.*;
-import com.orientechnologies.orient.core.sql.functions.stat.*;
+import com.orientechnologies.orient.core.sql.functions.math.OSQLFunctionAverage;
+import com.orientechnologies.orient.core.sql.functions.math.OSQLFunctionDecimal;
+import com.orientechnologies.orient.core.sql.functions.math.OSQLFunctionEval;
+import com.orientechnologies.orient.core.sql.functions.math.OSQLFunctionMax;
+import com.orientechnologies.orient.core.sql.functions.math.OSQLFunctionMin;
+import com.orientechnologies.orient.core.sql.functions.math.OSQLFunctionSum;
+import com.orientechnologies.orient.core.sql.functions.misc.OSQLFunctionCoalesce;
+import com.orientechnologies.orient.core.sql.functions.misc.OSQLFunctionCount;
+import com.orientechnologies.orient.core.sql.functions.misc.OSQLFunctionDate;
+import com.orientechnologies.orient.core.sql.functions.misc.OSQLFunctionDecode;
+import com.orientechnologies.orient.core.sql.functions.misc.OSQLFunctionEncode;
+import com.orientechnologies.orient.core.sql.functions.misc.OSQLFunctionIf;
+import com.orientechnologies.orient.core.sql.functions.misc.OSQLFunctionIfNull;
+import com.orientechnologies.orient.core.sql.functions.misc.OSQLFunctionSysdate;
+import com.orientechnologies.orient.core.sql.functions.misc.OSQLFunctionUUID;
+import com.orientechnologies.orient.core.sql.functions.sequence.OSQLFunctionSequence;
+import com.orientechnologies.orient.core.sql.functions.stat.OSQLFunctionMedian;
+import com.orientechnologies.orient.core.sql.functions.stat.OSQLFunctionMode;
+import com.orientechnologies.orient.core.sql.functions.stat.OSQLFunctionPercentile;
+import com.orientechnologies.orient.core.sql.functions.stat.OSQLFunctionStandardDeviation;
+import com.orientechnologies.orient.core.sql.functions.stat.OSQLFunctionVariance;
 import com.orientechnologies.orient.core.sql.functions.text.OSQLFunctionConcat;
 import com.orientechnologies.orient.core.sql.functions.text.OSQLFunctionFormat;
 
@@ -50,7 +73,7 @@ public final class ODefaultSQLFunctionFactory implements OSQLFunctionFactory {
     register(OSQLFunctionDocument.NAME, OSQLFunctionDocument.class);
     register(OSQLFunctionEncode.NAME, new OSQLFunctionEncode());
     register(OSQLFunctionEval.NAME, OSQLFunctionEval.class);
-    register(OSQLFunctionFirst.NAME, OSQLFunctionFirst.class);
+    register(OSQLFunctionFirst.NAME, new OSQLFunctionFirst());
     register(OSQLFunctionFormat.NAME, new OSQLFunctionFormat());
     register(OSQLFunctionTraversedEdge.NAME, OSQLFunctionTraversedEdge.class);
     register(OSQLFunctionTraversedElement.NAME, OSQLFunctionTraversedElement.class);
@@ -58,7 +81,7 @@ public final class ODefaultSQLFunctionFactory implements OSQLFunctionFactory {
     register(OSQLFunctionIf.NAME, new OSQLFunctionIf());
     register(OSQLFunctionIfNull.NAME, new OSQLFunctionIfNull());
     register(OSQLFunctionIntersect.NAME, OSQLFunctionIntersect.class);
-    register(OSQLFunctionLast.NAME, OSQLFunctionLast.class);
+    register(OSQLFunctionLast.NAME, new OSQLFunctionLast());
     register(OSQLFunctionList.NAME, OSQLFunctionList.class);
     register(OSQLFunctionMap.NAME, OSQLFunctionMap.class);
     register(OSQLFunctionMax.NAME, OSQLFunctionMax.class);
@@ -75,6 +98,7 @@ public final class ODefaultSQLFunctionFactory implements OSQLFunctionFactory {
     register(OSQLFunctionUUID.NAME, OSQLFunctionUUID.class);
     register(OSQLFunctionConcat.NAME, OSQLFunctionConcat.class);
     register(OSQLFunctionDecimal.NAME, OSQLFunctionDecimal.class);
+    register(OSQLFunctionSequence.NAME, new OSQLFunctionSequence());
   }
 
   public static void register(final String iName, final Object iImplementation) {
@@ -106,8 +130,8 @@ public final class ODefaultSQLFunctionFactory implements OSQLFunctionFactory {
       try {
         return (OSQLFunction) clazz.newInstance();
       } catch (Exception e) {
-        throw new OCommandExecutionException("Error in creation of function " + name
-            + "(). Probably there is not an empty constructor or the constructor generates errors", e);
+        throw OException.wrapException(new OCommandExecutionException("Error in creation of function " + name
+            + "(). Probably there is not an empty constructor or the constructor generates errors"), e);
       }
     }
 

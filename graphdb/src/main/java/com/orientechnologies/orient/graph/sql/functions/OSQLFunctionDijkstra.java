@@ -20,13 +20,13 @@
 package com.orientechnologies.orient.graph.sql.functions;
 
 import com.orientechnologies.common.collection.OMultiValue;
+import com.orientechnologies.common.io.OIOUtils;
 import com.orientechnologies.common.types.OModifiableBoolean;
 import com.orientechnologies.orient.core.command.OCommandContext;
 import com.orientechnologies.orient.core.db.ODatabaseDocumentInternal;
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal;
 import com.orientechnologies.orient.core.db.record.OIdentifiable;
 import com.orientechnologies.orient.core.record.ORecord;
-import com.orientechnologies.orient.core.serialization.serializer.OStringSerializerHelper;
 import com.orientechnologies.orient.core.sql.OSQLHelper;
 import com.orientechnologies.orient.graph.sql.OGraphCommandExecutorSQLFactory;
 import com.tinkerpop.blueprints.Direction;
@@ -61,7 +61,7 @@ public class OSQLFunctionDijkstra extends OSQLFunctionPathFinder {
       final Object[] iParams, OCommandContext iContext) {
     final OModifiableBoolean shutdownFlag = new OModifiableBoolean();
     ODatabaseDocumentInternal curDb = ODatabaseRecordThreadLocal.INSTANCE.get();
-    final OrientBaseGraph graph = OGraphCommandExecutorSQLFactory.getGraph(false, shutdownFlag);
+    final OrientBaseGraph graph = OGraphCommandExecutorSQLFactory.getAnyGraph(shutdownFlag);
     try {
 
       final ORecord record = iCurrentRecord != null ? iCurrentRecord.getRecord() : null;
@@ -82,7 +82,7 @@ public class OSQLFunctionDijkstra extends OSQLFunctionPathFinder {
       }
       paramDestinationVertex = graph.getVertex(OSQLHelper.getValue(dest, record, iContext));
 
-      paramWeightFieldName = OStringSerializerHelper.getStringContent(iParams[2]);
+      paramWeightFieldName = OIOUtils.getStringContent(iParams[2]);
       if (iParams.length > 3)
         paramDirection = Direction.valueOf(iParams[3].toString().toUpperCase());
 

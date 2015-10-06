@@ -19,6 +19,13 @@
  */
 package com.orientechnologies.orient.core.sql;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.orientechnologies.common.collection.OMultiValue;
 import com.orientechnologies.common.io.OIOUtils;
 import com.orientechnologies.common.parser.OBaseParser;
@@ -43,13 +50,6 @@ import com.orientechnologies.orient.core.sql.filter.OSQLFilterItemParameter;
 import com.orientechnologies.orient.core.sql.filter.OSQLFilterItemVariable;
 import com.orientechnologies.orient.core.sql.filter.OSQLPredicate;
 import com.orientechnologies.orient.core.sql.functions.OSQLFunctionRuntime;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * SQL Helper class
@@ -100,7 +100,7 @@ public class OSQLHelper {
 
     if (iValue.startsWith("'") && iValue.endsWith("'") || iValue.startsWith("\"") && iValue.endsWith("\""))
       // STRING
-      fieldValue = OStringSerializerHelper.getStringContent(iValue);
+      fieldValue = OIOUtils.getStringContent(iValue);
     else if (iValue.charAt(0) == OStringSerializerHelper.LIST_BEGIN
         && iValue.charAt(iValue.length() - 1) == OStringSerializerHelper.LIST_END) {
       // COLLECTION/ARRAY

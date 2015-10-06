@@ -1,7 +1,9 @@
 package com.orientechnologies.orient.core.index.hashindex.local;
 
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.serialization.types.OBinarySerializer;
 import com.orientechnologies.common.util.OCommonConst;
+import com.orientechnologies.orient.core.exception.OLocalHashTableException;
 import com.orientechnologies.orient.core.exception.OStorageException;
 import com.orientechnologies.orient.core.index.OIndexException;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
@@ -77,38 +79,38 @@ import java.util.List;
  * @since 12.03.13
  */
 public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTable<K, V> {
-  private static final long HASH_CODE_MIN_VALUE = 0;
-  private static final long HASH_CODE_MAX_VALUE = 0xFFFFFFFFFFFFFFFFL;
+  private static final long                         HASH_CODE_MIN_VALUE = 0;
+  private static final long                         HASH_CODE_MAX_VALUE = 0xFFFFFFFFFFFFFFFFL;
 
-  private final String metadataConfigurationFileExtension;
-  private final String treeStateFileExtension;
+  private final String                              metadataConfigurationFileExtension;
+  private final String                              treeStateFileExtension;
 
-  public static final int HASH_CODE_SIZE  = 64;
-  public static final int MAX_LEVEL_DEPTH = 8;
-  public static final int MAX_LEVEL_SIZE  = 1 << MAX_LEVEL_DEPTH;
+  public static final int                           HASH_CODE_SIZE      = 64;
+  public static final int                           MAX_LEVEL_DEPTH     = 8;
+  public static final int                           MAX_LEVEL_SIZE      = 1 << MAX_LEVEL_DEPTH;
 
-  public static final int LEVEL_MASK = Integer.MAX_VALUE >>> (31 - MAX_LEVEL_DEPTH);
+  public static final int                           LEVEL_MASK          = Integer.MAX_VALUE >>> (31 - MAX_LEVEL_DEPTH);
 
-  private final OHashFunction<K> keyHashFunction;
+  private final OHashFunction<K>                    keyHashFunction;
 
-  private OBinarySerializer<K> keySerializer;
-  private OBinarySerializer<V> valueSerializer;
-  private OType[]              keyTypes;
+  private OBinarySerializer<K>                      keySerializer;
+  private OBinarySerializer<V>                      valueSerializer;
+  private OType[]                                   keyTypes;
 
   private final OHashTable.KeyHashCodeComparator<K> comparator;
 
-  private boolean      nullKeyIsSupported;
-  private long         nullBucketFileId = -1;
-  private final String nullBucketFileExtension;
+  private boolean                                   nullKeyIsSupported;
+  private long                                      nullBucketFileId    = -1;
+  private final String                              nullBucketFileExtension;
 
-  private long fileStateId;
-  private long fileId;
+  private long                                      fileStateId;
+  private long                                      fileId;
 
-  private long hashStateEntryIndex;
+  private long                                      hashStateEntryIndex;
 
-  private OHashTableDirectory directory;
+  private OHashTableDirectory                       directory;
 
-  private final boolean durableInNonTxMode;
+  private final boolean                             durableInNonTxMode;
 
   public OLocalHashTable(String name, String metadataConfigurationFileExtension, String treeStateFileExtension,
       String bucketFileExtension, String nullBucketFileExtension, OHashFunction<K> keyHashFunction, boolean durableInNonTxMode,
@@ -132,7 +134,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OIndexException("Error during hash table creation.", e);
+      throw OException.wrapException(new OIndexException("Error during hash table creation"), e);
     }
 
     acquireExclusiveLock();
@@ -184,10 +186,10 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         throw e;
       } catch (Exception e) {
         endAtomicOperation(true, e);
-        throw new OStorageException(null, e);
+        throw OException.wrapException(new OStorageException("Error during local hash table creation"), e);
       }
     } catch (IOException e) {
-      throw new OIndexException("Error during local hash table creation.", e);
+      throw OException.wrapException(new OIndexException("Error during local hash table creation"), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -214,7 +216,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OIndexException("Error during hash set serializer for index keys.", e);
+      throw OException.wrapException(new OIndexException("Error during hash set serializer for index keys"), e);
     }
 
     acquireExclusiveLock();
@@ -237,10 +239,10 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     } catch (IOException e) {
       rollback(e);
 
-      throw new OIndexException("Can not set serializer for index keys", e);
+      throw OException.wrapException(new OIndexException("Cannot set serializer for index keys"), e);
     } catch (Exception e) {
       rollback(e);
-      throw new OStorageException(null, e);
+      throw OException.wrapException(new OStorageException("Cannot set serializer for index keys"), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -250,7 +252,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       endAtomicOperation(true, e);
     } catch (IOException ioe) {
-      throw new OIndexException("Error during operation roolback", ioe);
+      throw OException.wrapException(new OIndexException("Error during operation roolback"), ioe);
     }
   }
 
@@ -270,7 +272,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OIndexException("Error during hash table set serializer for index values", e);
+      throw OException.wrapException(new OIndexException("Error during hash table set serializer for index values"), e);
     }
 
     acquireExclusiveLock();
@@ -281,8 +283,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       hashStateEntry.acquireExclusiveLock();
       try {
         OHashIndexFileLevelMetadataPage metadataPage = new OHashIndexFileLevelMetadataPage(hashStateEntry,
- getChanges(
-            atomicOperation, hashStateEntry), false);
+            getChanges(atomicOperation, hashStateEntry), false);
 
         metadataPage.setValueSerializerId(valueSerializer.getId());
       } finally {
@@ -293,10 +294,10 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       endAtomicOperation(false, null);
     } catch (IOException e) {
       rollback(e);
-      throw new OIndexException("Can not set serializer for index values", e);
+      throw OException.wrapException(new OIndexException("Cannot set serializer for index values"), e);
     } catch (Exception e) {
       rollback(e);
-      throw new OStorageException(null, e);
+      throw OException.wrapException(new OStorageException("Cannot set serializer for index values"), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -331,8 +332,8 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
           final long hashCode = keyHashFunction.hashCode(key);
 
           OHashTable.BucketPath bucketPath = getBucket(hashCode);
-          final long bucketPointer = directory.getNodePointer(bucketPath.nodeIndex,
-              bucketPath.itemIndex + bucketPath.hashMapOffset);
+          final long bucketPointer = directory
+              .getNodePointer(bucketPath.nodeIndex, bucketPath.itemIndex + bucketPath.hashMapOffset);
 
           if (bucketPointer == 0)
             return null;
@@ -358,7 +359,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         releaseSharedLock();
       }
     } catch (IOException e) {
-      throw new OIndexException("Exception during index value retrieval", e);
+      throw OException.wrapException(new OIndexException("Exception during index value retrieval"), e);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -370,7 +371,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OIndexException("Error during hash table entry put", e);
+      throw OException.wrapException(new OIndexException("Error during hash table entry put"), e);
     }
     acquireExclusiveLock();
     try {
@@ -384,10 +385,10 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       endAtomicOperation(false, null);
     } catch (IOException e) {
       rollback(e);
-      throw new OIndexException("Error during index update", e);
+      throw OException.wrapException(new OIndexException("Error during index update"), e);
     } catch (Exception e) {
       rollback(e);
-      throw new OStorageException(null, e);
+      throw OException.wrapException(new OStorageException("Error during index update"), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -399,7 +400,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OIndexException("Error during hash table entry deletion.", e);
+      throw OException.wrapException(new OIndexException("Error during hash table entry deletion"), e);
     }
 
     acquireExclusiveLock();
@@ -439,8 +440,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         if (nodePath.parent != null) {
           final int hashMapSize = 1 << nodePath.nodeLocalDepth;
 
-          final boolean allMapsContainSameBucket = checkAllMapsContainSameBucket(directory.getNode(nodePath.nodeIndex),
-              hashMapSize);
+          final boolean allMapsContainSameBucket = checkAllMapsContainSameBucket(directory.getNode(nodePath.nodeIndex), hashMapSize);
           if (allMapsContainSameBucket)
             mergeNodeToParent(nodePath);
         }
@@ -483,10 +483,10 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       }
     } catch (IOException e) {
       rollback(e);
-      throw new OIndexException("Error during index removal", e);
+      throw OException.wrapException(new OIndexException("Error during index removal"), e);
     } catch (Exception e) {
       rollback(e);
-      throw new OStorageException(null, e);
+      throw OException.wrapException(new OStorageException("Error during index removal"), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -515,7 +515,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OIndexException("Error during hash table clear", e);
+      throw OException.wrapException(new OIndexException("Error during hash table clear"), e);
     }
 
     acquireExclusiveLock();
@@ -528,10 +528,10 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       endAtomicOperation(false, null);
     } catch (IOException e) {
       rollback(e);
-      throw new OIndexException("Error during hash table clear", e);
+      throw OException.wrapException(new OLocalHashTableException("Error during hash table clear", this), e);
     } catch (Exception e) {
       rollback(e);
-      throw new OSBTreeException(null, e);
+      throw OException.wrapException(new OLocalHashTableException("Error during hash table clear", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -570,8 +570,8 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
 
             releasePage(atomicOperation, cacheEntry);
 
-            final long nextPointer = directory.getNodePointer(bucketPath.nodeIndex,
-                bucketPath.itemIndex + bucketPath.hashMapOffset);
+            final long nextPointer = directory
+                .getNodePointer(bucketPath.nodeIndex, bucketPath.itemIndex + bucketPath.hashMapOffset);
 
             pageIndex = getPageIndex(nextPointer);
 
@@ -603,7 +603,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         releaseSharedLock();
       }
     } catch (IOException ioe) {
-      throw new OIndexException("Exception during data retrieval", ioe);
+      throw OException.wrapException(new OLocalHashTableException("Exception during data retrieval", this), ioe);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -647,7 +647,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
 
       fileId = openFile(atomicOperation, getFullName());
     } catch (IOException e) {
-      throw new OIndexException("Exception during hash table loading", e);
+      throw OException.wrapException(new OLocalHashTableException("Exception during hash table loading", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -659,7 +659,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OIndexException("Error during hash table deletion.", e);
+      throw OException.wrapException(new OLocalHashTableException("Error during hash table deletion", this), e);
     }
 
     acquireExclusiveLock();
@@ -686,10 +686,10 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       endAtomicOperation(false, null);
     } catch (IOException ioe) {
       rollback(ioe);
-      throw new OIndexException("Can not delete hash table with name " + name, ioe);
+      throw OException.wrapException(new OLocalHashTableException("Cannot delete hash table with name " + name, this), ioe);
     } catch (Exception e) {
       rollback(e);
-      throw new OIndexException("Can not delete hash table with name " + name, e);
+      throw OException.wrapException(new OLocalHashTableException("Cannot delete hash table with name " + name, this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -837,8 +837,8 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
               return OCommonConst.EMPTY_BUCKET_ENTRY_ARRAY;
 
             releasePage(atomicOperation, cacheEntry);
-            final long nextPointer = directory.getNodePointer(bucketPath.nodeIndex,
-                bucketPath.itemIndex + bucketPath.hashMapOffset);
+            final long nextPointer = directory
+                .getNodePointer(bucketPath.nodeIndex, bucketPath.itemIndex + bucketPath.hashMapOffset);
 
             pageIndex = getPageIndex(nextPointer);
 
@@ -864,7 +864,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         releaseSharedLock();
       }
     } catch (IOException ioe) {
-      throw new OIndexException("Error during data retrieval", ioe);
+      throw OException.wrapException(new OLocalHashTableException("Error during data retrieval", this), ioe);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -893,8 +893,8 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
               return null;
 
             releasePage(atomicOperation, cacheEntry);
-            final long nextPointer = directory.getNodePointer(bucketPath.nodeIndex,
-                bucketPath.itemIndex + bucketPath.hashMapOffset);
+            final long nextPointer = directory
+                .getNodePointer(bucketPath.nodeIndex, bucketPath.itemIndex + bucketPath.hashMapOffset);
 
             pageIndex = getPageIndex(nextPointer);
 
@@ -912,7 +912,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         releaseSharedLock();
       }
     } catch (IOException ioe) {
-      throw new OIndexException("Exception during data read", ioe);
+      throw OException.wrapException(new OLocalHashTableException("Exception during data read", this), ioe);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -942,8 +942,8 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
               return null;
 
             releasePage(atomicOperation, cacheEntry);
-            final long prevPointer = directory.getNodePointer(prevBucketPath.nodeIndex,
-                prevBucketPath.itemIndex + prevBucketPath.hashMapOffset);
+            final long prevPointer = directory.getNodePointer(prevBucketPath.nodeIndex, prevBucketPath.itemIndex
+                + prevBucketPath.hashMapOffset);
 
             pageIndex = getPageIndex(prevPointer);
 
@@ -963,7 +963,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         releaseSharedLock();
       }
     } catch (IOException ioe) {
-      throw new OIndexException("Exception during data read", ioe);
+      throw OException.wrapException(new OLocalHashTableException("Exception during data read", this), ioe);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -997,8 +997,8 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
 
             releasePage(atomicOperation, cacheEntry);
 
-            final long prevPointer = directory.getNodePointer(prevBucketPath.nodeIndex,
-                prevBucketPath.itemIndex + prevBucketPath.hashMapOffset);
+            final long prevPointer = directory.getNodePointer(prevBucketPath.nodeIndex, prevBucketPath.itemIndex
+                + prevBucketPath.hashMapOffset);
 
             pageIndex = getPageIndex(prevPointer);
 
@@ -1027,7 +1027,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         releaseSharedLock();
       }
     } catch (IOException ioe) {
-      throw new OIndexException("Exception during data read", ioe);
+      throw OException.wrapException(new OLocalHashTableException("Exception during data read", this), ioe);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -1060,8 +1060,8 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
 
             releasePage(atomicOperation, cacheEntry);
 
-            final long prevPointer = directory.getNodePointer(prevBucketPath.nodeIndex,
-                prevBucketPath.itemIndex + prevBucketPath.hashMapOffset);
+            final long prevPointer = directory.getNodePointer(prevBucketPath.nodeIndex, prevBucketPath.itemIndex
+                + prevBucketPath.hashMapOffset);
 
             pageIndex = getPageIndex(prevPointer);
 
@@ -1091,7 +1091,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         releaseSharedLock();
       }
     } catch (IOException ioe) {
-      throw new OIndexException("Exception during data read", ioe);
+      throw OException.wrapException(new OLocalHashTableException("Exception during data read", this), ioe);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -1210,7 +1210,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         releaseSharedLock();
       }
     } catch (IOException e) {
-      throw new OIndexException("Error during index size request.", e);
+      throw OException.wrapException(new OLocalHashTableException("Error during index size request", this), e);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -1226,7 +1226,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       readCache.closeFile(fileStateId, true, writeCache);
       readCache.closeFile(fileId, true, writeCache);
     } catch (IOException e) {
-      throw new OIndexException("Error during hash table close", e);
+      throw OException.wrapException(new OLocalHashTableException("Error during hash table close", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -1238,7 +1238,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OIndexException("Error during hash table deletion.", e);
+      throw OException.wrapException(new OLocalHashTableException("Error during hash table deletion", this), e);
     }
 
     acquireExclusiveLock();
@@ -1253,11 +1253,11 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       endAtomicOperation(false, null);
     } catch (IOException e) {
       rollback(e);
-      throw new OIndexException("Exception during index deletion", e);
+      throw OException.wrapException(new OLocalHashTableException("Exception during index deletion", this), e);
     } catch (Exception e) {
       rollback(e);
 
-      throw new OIndexException("Exception during index deletion", e);
+      throw OException.wrapException(new OLocalHashTableException("Exception during index deletion", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -1297,7 +1297,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       if (nullKeyIsSupported)
         writeCache.flush(nullBucketFileId);
     } catch (IOException e) {
-      throw new OIndexException("Error during hash table flush", e);
+      throw OException.wrapException(new OLocalHashTableException("Error during hash table flush", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -1386,7 +1386,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
           if (bucketPath.nodeLocalDepth < MAX_LEVEL_DEPTH) {
             final OHashTable.NodeSplitResult nodeSplitResult = splitNode(bucketPath);
 
-            assert!(nodeSplitResult.allLeftHashMapsEqual && nodeSplitResult.allRightHashMapsEqual);
+            assert !(nodeSplitResult.allLeftHashMapsEqual && nodeSplitResult.allRightHashMapsEqual);
 
             final long[] newNode = nodeSplitResult.newNode;
 
@@ -1413,8 +1413,8 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
               updateNodeAfterBucketSplit(updatedBucketPath, bucketDepth, newBucketPointer, updatedBucketPointer);
             } else {
               allRightHashMapsEqual = false;
-              final OHashTable.BucketPath newBucketPath = new OHashTable.BucketPath(bucketPath.parent,
-                  updatedOffset - MAX_LEVEL_SIZE, updatedItemIndex, newNodeIndex, nodeLocalDepth, updatedGlobalDepth);
+              final OHashTable.BucketPath newBucketPath = new OHashTable.BucketPath(bucketPath.parent, updatedOffset
+                  - MAX_LEVEL_SIZE, updatedItemIndex, newNodeIndex, nodeLocalDepth, updatedGlobalDepth);
               updateNodeAfterBucketSplit(newBucketPath, bucketDepth, newBucketPointer, updatedBucketPointer);
             }
 
@@ -1440,7 +1440,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
 
   private void checkNullSupport(K key) {
     if (key == null && !nullKeyIsSupported)
-      throw new OIndexException("Null keys are not supported.");
+      throw new OLocalHashTableException("Null keys are not supported.", this);
   }
 
   private void updateNodesAfterSplit(OHashTable.BucketPath bucketPath, int nodeIndex, long[] newNode, int nodeLocalDepth,
@@ -1469,8 +1469,8 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       }
     } else {
       for (int i = 0; i < pointersSize; i++)
-        directory.setNodePointer(parentNodeIndex, startIndex + pointersSize + i,
-            (newNodeIndex << 8) | (i * hashMapSize) | Long.MIN_VALUE);
+        directory.setNodePointer(parentNodeIndex, startIndex + pointersSize + i, (newNodeIndex << 8) | (i * hashMapSize)
+            | Long.MIN_VALUE);
     }
 
     updateMaxChildDepth(bucketPath.parent, bucketPath.nodeLocalDepth + 1);

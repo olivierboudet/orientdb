@@ -109,7 +109,9 @@ public class SimpleNode implements Node {
    */
 
   public String toString() {
-    return getClass().getSimpleName();
+    StringBuilder result = new StringBuilder();
+    toString(null, result);
+    return result.toString();
   }
 
   public String toString(String prefix) {
@@ -138,6 +140,10 @@ public class SimpleNode implements Node {
 
   public void toString(Map<Object, Object> params, StringBuilder builder) {
     throw new UnsupportedOperationException("not implemented in " + getClass().getSimpleName());
+  }
+
+  public Object getValue() {
+    return value;
   }
 }
 

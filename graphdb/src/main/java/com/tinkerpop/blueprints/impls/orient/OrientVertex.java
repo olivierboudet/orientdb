@@ -152,12 +152,12 @@ public class OrientVertex extends OrientElement implements OrientExtendedVertex 
         outType = OType.LINKBAG;
       } else
         throw new IllegalStateException("Type of field provided in schema '" + prop.getType()
-            + "' can not be used for link creation.");
+            + "' cannot be used for link creation.");
 
     } else if (found instanceof OIdentifiable) {
       if (prop != null && propType == OType.LINK)
         throw new IllegalStateException("Type of field provided in schema '" + prop.getType()
-            + "' can not be used for creation to hold several links.");
+            + "' cannot be used for creation to hold several links.");
 
       if (prop != null && "true".equalsIgnoreCase(prop.getCustom(OrientVertexType.OrientVertexProperty.ORDERED))) {
         final Collection coll = new ORecordLazyList(iFromVertex);
@@ -613,13 +613,13 @@ public class OrientVertex extends OrientElement implements OrientExtendedVertex 
           } else {
             // CREATE LAZY Iterable AGAINST COLLECTION FIELD
             if (coll instanceof ORecordLazyMultiValue)
-              iterable.add(new OrientVertexIterator(this, ((ORecordLazyMultiValue) coll).rawIterator(), connection, iLabels,
+              iterable.add(new OrientVertexIterator(this, coll, ((ORecordLazyMultiValue) coll).rawIterator(), connection, iLabels,
                   coll.size()));
             else
-              iterable.add(new OrientVertexIterator(this, coll.iterator(), connection, iLabels, -1));
+              iterable.add(new OrientVertexIterator(this, coll, coll.iterator(), connection, iLabels, -1));
           }
         } else if (fieldValue instanceof ORidBag) {
-          iterable.add(new OrientVertexIterator(this, ((ORidBag) fieldValue).rawIterator(), connection, iLabels, -1));
+          iterable.add(new OrientVertexIterator(this, fieldValue, ((ORidBag) fieldValue).rawIterator(), connection, iLabels, -1));
         }
     }
 
@@ -1046,7 +1046,7 @@ public class OrientVertex extends OrientElement implements OrientExtendedVertex 
   }
 
   /**
-   * (Blueprints Entension) Returns all the edges from the current Vertex to another one.
+   * (Blueprints Extension) Returns all the edges from the current Vertex to another one.
    *
    * @param iDestination
    *          The target vertex
@@ -1094,14 +1094,14 @@ public class OrientVertex extends OrientElement implements OrientExtendedVertex 
           } else {
             // CREATE LAZY Iterable AGAINST COLLECTION FIELD
             if (coll instanceof ORecordLazyMultiValue) {
-              iterable.add(new OrientEdgeIterator(this, iDestination, ((ORecordLazyMultiValue) coll).rawIterator(), connection,
-                  iLabels, coll.size()));
+              iterable.add(new OrientEdgeIterator(this, iDestination, coll, ((ORecordLazyMultiValue) coll).rawIterator(),
+                  connection, iLabels, coll.size()));
             } else
-              iterable.add(new OrientEdgeIterator(this, iDestination, coll.iterator(), connection, iLabels, -1));
+              iterable.add(new OrientEdgeIterator(this, iDestination, coll, coll.iterator(), connection, iLabels, -1));
           }
         } else if (fieldValue instanceof ORidBag) {
-          iterable.add(new OrientEdgeIterator(this, iDestination, ((ORidBag) fieldValue).rawIterator(), connection, iLabels,
-              ((ORidBag) fieldValue).size()));
+          iterable.add(new OrientEdgeIterator(this, iDestination, fieldValue, ((ORidBag) fieldValue).rawIterator(), connection,
+              iLabels, ((ORidBag) fieldValue).size()));
         }
       }
     }

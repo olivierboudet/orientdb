@@ -22,12 +22,13 @@ package com.orientechnologies.orient.core.engine.local;
 
 import java.util.Map;
 
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.engine.OEngineAbstract;
 import com.orientechnologies.orient.core.exception.ODatabaseException;
-import com.orientechnologies.orient.core.storage.cache.local.O2QCache;
 import com.orientechnologies.orient.core.storage.OStorage;
+import com.orientechnologies.orient.core.storage.cache.local.O2QCache;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.OLocalPaginatedStorage;
 
 /**
@@ -46,7 +47,7 @@ public class OEngineLocalPaginated extends OEngineAbstract {
     try {
       readCache.registerMBean();
     } catch (Exception e) {
-      OLogManager.instance().error(this, "MBean for read cache can not be registered", e);
+      OLogManager.instance().error(this, "MBean for read cache cannot be registered", e);
     }
 
   }
@@ -56,12 +57,13 @@ public class OEngineLocalPaginated extends OEngineAbstract {
       // GET THE STORAGE
       return new OLocalPaginatedStorage(dbName, dbName, getMode(configuration), generateStorageId(), readCache);
 
-    } catch (Throwable t) {
-      OLogManager.instance().error(this,
-          "Error on opening database: " + dbName + ". Current location is: " + new java.io.File(".").getAbsolutePath(), t,
-          ODatabaseException.class);
+    } catch (Exception e) {
+      final String message = "Error on opening database: " + dbName + ". Current location is: "
+          + new java.io.File(".").getAbsolutePath();
+      OLogManager.instance().error(this, message, e);
+
+      throw OException.wrapException(new ODatabaseException(message), e);
     }
-    return null;
   }
 
   public String getName() {
@@ -80,7 +82,7 @@ public class OEngineLocalPaginated extends OEngineAbstract {
     try {
       readCache.unregisterMBean();
     } catch (Exception e) {
-      OLogManager.instance().error(this, "MBean for read cache can not be unregisterd.", e);
+      OLogManager.instance().error(this, "MBean for read cache cannot be unregistered", e);
     }
 
   }

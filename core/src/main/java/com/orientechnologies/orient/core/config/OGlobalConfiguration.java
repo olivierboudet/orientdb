@@ -19,16 +19,6 @@
  */
 package com.orientechnologies.orient.core.config;
 
-import com.orientechnologies.common.io.OFileUtils;
-import com.orientechnologies.common.log.OLogManager;
-import com.orientechnologies.common.util.OApi;
-import com.orientechnologies.orient.core.OConstants;
-import com.orientechnologies.orient.core.Orient;
-import com.orientechnologies.orient.core.cache.ORecordCacheWeakRefs;
-import com.orientechnologies.orient.core.metadata.OMetadataDefault;
-import com.orientechnologies.orient.core.serialization.serializer.record.binary.ORecordSerializerBinary;
-import com.orientechnologies.orient.core.storage.cache.local.O2QCache;
-
 import java.io.File;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
@@ -40,6 +30,16 @@ import java.util.Map.Entry;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
+
+import com.orientechnologies.common.io.OFileUtils;
+import com.orientechnologies.common.log.OLogManager;
+import com.orientechnologies.common.util.OApi;
+import com.orientechnologies.orient.core.OConstants;
+import com.orientechnologies.orient.core.Orient;
+import com.orientechnologies.orient.core.cache.ORecordCacheWeakRefs;
+import com.orientechnologies.orient.core.metadata.OMetadataDefault;
+import com.orientechnologies.orient.core.serialization.serializer.record.binary.ORecordSerializerBinary;
+import com.orientechnologies.orient.core.storage.cache.local.O2QCache;
 
 /**
  * Keeps all configuration settings. At startup assigns the configuration values by reading system properties.
@@ -70,6 +70,11 @@ public enum OGlobalConfiguration {
           + "but usually it can be safely put to false. It is needed to set to true only after dramatic changes in storage structures.",
       Boolean.class, true),
 
+  DIRECT_MEMORY_TRACK_MODE("memory.directMemory.trackMode", "If 'track mode' is switched on then following steps are performed: "
+      + "1. direct memory JMX bean is registered. 2. You may check amount of allocated direct memory as property of JMX bean. "
+      + "3. If memory leak is detected then JMX event will be fired. "
+      + "This mode provides big overhead and may be used only for testing purpose", Boolean.class, false),
+
   DIRECT_MEMORY_ONLY_ALIGNED_ACCESS(
       "memory.directMemory.onlyAlignedMemoryAccess",
       "Some architectures does not allow unaligned memory access or suffer from speed degradation, on this platforms flag should be set to true",
@@ -92,10 +97,10 @@ public enum OGlobalConfiguration {
   DISK_WRITE_CACHE_FLUSH_WRITE_INACTIVITY_INTERVAL("storage.diskCache.writeCacheFlushInactivityInterval",
       "Interval between 2 writes to the disk cache,"
           + " if writes are done with interval more than provided all files will be fsynced before next write,"
-          + " which allows do not do data restore after server crash (in ms).", Long.class, 60 * 1000),
+          + " which allows do not do data restore after server crash (in ms)", Long.class, 60 * 1000),
 
   DISK_WRITE_CACHE_FLUSH_LOCK_TIMEOUT("storage.diskCache.writeCacheFlushLockTimeout",
-      "Maximum amount of time till write cache will be wait before page flush in ms.", Integer.class, -1),
+      "Maximum amount of time till write cache will be wait before page flush in ms", Integer.class, -1),
 
   DISK_CACHE_FREE_SPACE_LIMIT("storage.diskCache.diskFreeSpaceLimit", "Minimum amount of space on disk after which database will "
       + "work only in read mode, in megabytes", Long.class, 100),
@@ -107,13 +112,25 @@ public enum OGlobalConfiguration {
   STORAGE_CONFIGURATION_SYNC_ON_UPDATE("storage.configuration.syncOnUpdate",
       "Should we perform force sync of storage configuration for each update", Boolean.class, true),
 
-  STORAGE_COMPRESSION_METHOD("storage.compressionMethod", "Record compression method is used in storage."
-      + " Possible values : gzip, nothing, snappy, des-encrypted, aes-encrypted, snappy-native. Default is nothing.", String.class,
-      "nothing"),
+  STORAGE_COMPRESSION_METHOD("storage.compressionMethod", "Record compression method used in storage."
+      + " Possible values : gzip, nothing, snappy, snappy-native. Default is 'nothing'", String.class, "nothing"),
 
-  STORAGE_COMPRESSION_OPTIONS("storage.compressionOptions",
-      "Additional options for compression at storage level. Use this to store any encryption key. This setting is hidden",
-      String.class, null, false, true),
+  STORAGE_ENCRYPTION_METHOD("storage.encryptionMethod", "Record encryption method used in storage"
+      + " Possible values : 'aes' and 'des'. Default is no encryption", String.class, "nothing"),
+
+  STORAGE_ENCRYPTION_KEY("storage.encryptionKey", "Contains the storage encryption key. This setting is hidden", String.class,
+      null, false, true),
+
+  STORAGE_MAKE_FULL_CHECKPOINT_AFTER_CREATE("storage.makeFullCheckpointAfterCreate",
+      "Indicates whether full checkpoint should be performed if storage was created", Boolean.class, true),
+
+  STORAGE_MAKE_FULL_CHECKPOINT_AFTER_OPEN(
+      "storage.makeFullCheckpointAfterOpen",
+      "Indicates whether full checkpoint should be performed if storage was opened. It is needed to make fuzzy checkpoints to work without issues",
+      Boolean.class, true),
+
+  STORAGE_MAKE_FULL_CHECKPOINT_AFTER_CLUSTER_CREATE("storage.makeFullCheckpointAfterClusterCreate",
+      "Indicates whether full checkpoint should be performed if storage was opened", Boolean.class, true),
 
   USE_WAL("storage.useWAL", "Whether WAL should be used in paginated storage", Boolean.class, true),
 
@@ -123,7 +140,7 @@ public enum OGlobalConfiguration {
       "Maximum size of WAL cache (in amount of WAL pages, each page is 64k) <= 0 means that caching will be switched off.",
       Integer.class, 3000),
 
-  WAL_MAX_SEGMENT_SIZE("storage.wal.maxSegmentSize", "Maximum size of single. WAL segment in megabytes.", Integer.class, 128),
+  WAL_MAX_SEGMENT_SIZE("storage.wal.maxSegmentSize", "Maximum size of single. WAL segment in megabytes", Integer.class, 128),
 
   WAL_MAX_SIZE("storage.wal.maxSize", "Supposed, maximum size of WAL on disk in megabytes. This size may be more or less. ",
       Integer.class, 4096),
@@ -155,17 +172,6 @@ public enum OGlobalConfiguration {
   WAL_LOCATION("storage.wal.path", "Path to the wal file on the disk, by default is placed in DB directory but"
       + " it is highly recomended to use separate disk to store log operations", String.class, null),
 
-  STORAGE_MAKE_FULL_CHECKPOINT_AFTER_CREATE("storage.makeFullCheckpointAfterCreate",
-      "Indicates whether full checkpoint should be performed if storage was created.", Boolean.class, true),
-
-  STORAGE_MAKE_FULL_CHECKPOINT_AFTER_OPEN(
-      "storage.makeFullCheckpointAfterOpen",
-      "Indicates whether full checkpoint should be performed if storage was opened. It is needed to make fuzzy checkpoints to work without issues",
-      Boolean.class, true),
-
-  STORAGE_MAKE_FULL_CHECKPOINT_AFTER_CLUSTER_CREATE("storage.makeFullCheckpointAfterClusterCreate",
-      "Indicates whether full checkpoint should be performed if storage was opened.", Boolean.class, true),
-
   DISK_CACHE_PAGE_SIZE("storage.diskCache.pageSize", "Size of page of disk buffer in kilobytes,!!! NEVER CHANGE THIS VALUE !!!",
       Integer.class, 64),
 
@@ -174,7 +180,7 @@ public enum OGlobalConfiguration {
 
   @Deprecated
   STORAGE_USE_CRC32_FOR_EACH_RECORD("storage.cluster.usecrc32",
-      "Indicates whether crc32 should be used for each record to check record integrity.", Boolean.class, false),
+      "Indicates whether crc32 should be used for each record to check record integrity", Boolean.class, false),
 
   STORAGE_LOCK_TIMEOUT("storage.lockTimeout", "Maximum timeout in milliseconds to lock the storage", Integer.class, 0),
 
@@ -239,7 +245,7 @@ public enum OGlobalConfiguration {
       Integer.class, 1500),
 
   INDEX_SYNCHRONOUS_AUTO_REBUILD("index.auto.synchronousAutoRebuild",
-      "Synchronous execution of auto rebuilding of indexes in case of db crash.", Boolean.class, Boolean.TRUE),
+      "Synchronous execution of auto rebuilding of indexes in case of db crash", Boolean.class, Boolean.TRUE),
 
   INDEX_AUTO_LAZY_UPDATES(
       "index.auto.lazyUpdates",
@@ -300,7 +306,7 @@ public enum OGlobalConfiguration {
       Integer.class, -1, true),
 
   // COLLECTIONS
-  PREFER_SBTREE_SET("collections.preferSBTreeSet", "This config is experimental.", Boolean.class, false),
+  PREFER_SBTREE_SET("collections.preferSBTreeSet", "This config is experimental", Boolean.class, false),
 
   // FILE
   TRACK_FILE_CLOSE("file.trackFileClose",
@@ -313,7 +319,15 @@ public enum OGlobalConfiguration {
   FILE_DELETE_RETRY("file.deleteRetry", "Number of retries to delete a locked file", Integer.class, 50),
 
   JNA_DISABLE_USE_SYSTEM_LIBRARY("jna.disable.system.library",
-      "This property disable to using JNA installed in your system. And use JNA bundled with database.", boolean.class, true),
+      "This property disable to using JNA installed in your system. And use JNA bundled with database", boolean.class, true),
+
+  // SECURITY
+  SECURITY_USER_PASSWORD_SALT_ITERATIONS("security.userPasswordSaltIterations",
+      "Number of iterations to generate the salt or user password. Changing this setting does not affect stored passwords",
+      Integer.class, 65536),
+
+  SECURITY_USER_PASSWORD_SALT_CACHE_SIZE("security.userPasswordSaltCacheSize",
+      "Cache size of hashed salt passwords. The cache works as LRU. Use 0 to disable the cache", Integer.class, 500),
 
   // NETWORK
   NETWORK_MAX_CONCURRENT_SESSIONS("network.maxConcurrentSessions", "Maximum number of concurrent sessions", Integer.class, 1000,
@@ -356,9 +370,23 @@ public enum OGlobalConfiguration {
 
   NETWORK_HTTP_JSON_RESPONSE_ERROR("network.http.jsonResponseError", "Http response error in json", Boolean.class, true, true),
 
-  OAUTH2_SECRETKEY("oauth2.secretkey", "Http OAuth2 secret key", String.class, "utf-8"), NETWORK_HTTP_SESSION_EXPIRE_TIMEOUT(
-      "network.http.sessionExpireTimeout", "Timeout after which an http session is considered tp have expired (seconds)",
-      Integer.class, 300),
+  NETWORK_HTTP_JSONP_ENABLED("network.http.jsonp",
+      "Enable the usage of JSONP if requested by the client. The parameter name to use is 'callback'", Boolean.class, false, true),
+
+  @Deprecated
+  OAUTH2_SECRETKEY("oauth2.secretkey", "Http OAuth2 secret key", String.class, ""),
+
+  NETWORK_HTTP_SESSION_EXPIRE_TIMEOUT("network.http.sessionExpireTimeout",
+      "Timeout after which an http session is considered tp have expired (seconds)", Integer.class, 300),
+
+  NETWORK_HTTP_USE_TOKEN("network.http.useToken", "Enable Token based sessions for http", Boolean.class, false),
+
+  NETWORK_TOKEN_SECRETKEY("network.token.secretyKey", "Network token sercret key", String.class, ""),
+
+  NETWORK_TOKEN_ENCRIPTION_ALGORITHM("network.token.encriptionAlgorithm", "Network token algorithm", String.class, "HmacSHA256"),
+
+  NETWORK_TOKEN_EXPIRE_TIMEOUT("network.token.expireTimeout",
+      "Timeout after which an binary session is considered tp have expired (minutes)", Integer.class, 60),
 
   // PROFILER
   PROFILER_ENABLED("profiler.enabled", "Enable the recording of statistics and counters", Boolean.class, false,
@@ -403,7 +431,7 @@ public enum OGlobalConfiguration {
   CACHE_LOCAL_IMPL("cache.local.impl", "Local Record cache implementation", String.class, ORecordCacheWeakRefs.class.getName()),
 
   // COMMAND
-  COMMAND_TIMEOUT("command.timeout", "Default timeout for commands expressed in milliseconds", Long.class, 0),
+  COMMAND_TIMEOUT("command.timeout", "Default timeout for commands expressed in milliseconds", Long.class, 0, true),
 
   COMMAND_CACHE_ENABLED("command.cache.enabled", "Enable command cache", Boolean.class, false),
 
@@ -442,7 +470,7 @@ public enum OGlobalConfiguration {
    * Maximum size of pool of network channels between client and server. A channel is a TCP/IP connection.
    */
   CLIENT_CHANNEL_MAX_POOL("client.channel.maxPool",
-      "Maximum size of pool of network channels between client and server. A channel is a TCP/IP connection.", Integer.class, 100),
+      "Maximum size of pool of network channels between client and server. A channel is a TCP/IP connection", Integer.class, 100),
 
   /**
    * Maximum time which client should wait a connection from the pool when all connection are used.
@@ -463,9 +491,13 @@ public enum OGlobalConfiguration {
 
   CLIENT_SSL_TRUSTSTORE_PASSWORD("client.ssl.trustStorePass", "Use SSL for client connections", String.class, null),
 
-  CLIENT_SESSION_TOKEN_BASED("client.session.tokenBased", "Request a token based session to the server", Boolean.class, false),
+  @Deprecated
+  CLIENT_SESSION_TOKEN_BASED("client.session.tokenBased", "Request a token based session to the server", Boolean.class, true),
 
   // SERVER
+  SERVER_OPEN_ALL_DATABASES_AT_STARTUP("server.openAllDatabasesAtStartup",
+      "If true, the server opens all the available databases at startup. Since 2.2", Boolean.class, false),
+
   SERVER_CHANNEL_CLEAN_DELAY("server.channel.cleanDelay", "Time in ms of delay to check pending closed connections", Integer.class,
       5000),
 
@@ -511,6 +543,20 @@ public enum OGlobalConfiguration {
       "Maximum timeout in milliseconds to collect all the asynchronous responses from replication", Long.class, 15000l),
 
   /**
+   * @Since 2.1.3
+   */
+  @OApi(maturity = OApi.MATURITY.NEW)
+  DISTRIBUTED_QUEUE_MAXSIZE("distributed.queueMaxSize",
+      "Maximum queue size to mark a node as stalled. 0 = no maximum (up to 2^31-1 entries)", Integer.class, 100),
+
+  /**
+   * @Since 2.1.3
+   */
+  @OApi(maturity = OApi.MATURITY.NEW)
+  DISTRIBUTED_BACKUP_DIRECTORY("distributed.backupDirectory",
+      "Directory where to copy an existent database before to download from the cluster", String.class, "../backup/databases"),
+
+  /**
    * @Since 2.1
    */
   @OApi(maturity = OApi.MATURITY.NEW)
@@ -535,15 +581,6 @@ public enum OGlobalConfiguration {
 
   DB_DOCUMENT_SERIALIZER("db.document.serializer", "The default record serializer used by the document database", String.class,
       ORecordSerializerBinary.NAME),
-
-  // ENCRYPTION AT REST @see OAbstractEncryptedCompression https://github.com/orientechnologies/orientdb/issues/89
-  STORAGE_ENCRYPTION_DES_KEY(
-      "encryption.des_key",
-      "The simmetric key to use to encrypt/descript data at rest using the DES alghorithm, stored in BASE64. The key must be 64 bits long. Default is \"T1JJRU5UREI=\" (ORIENTDB).",
-      String.class, "T1JJRU5UREI="), STORAGE_ENCRYPTION_AES_KEY(
-      "encryption.aes_key",
-      "The simmetric key to use to encrypt/descript data at rest using the AES alghorithm, stored in BASE64. The key must be 128 or 256 bits. Default is \"T1JJRU5UREJfSVNfQ09PTA==\" (ORIENTDB_IS_COOL).",
-      String.class, "T1JJRU5UREJfSVNfQ09PTA=="),
 
   @Deprecated
   LAZYSET_WORK_ON_STREAM("lazyset.workOnStream", "Deprecated, now BINARY serialization is used in place of CSV", Boolean.class,

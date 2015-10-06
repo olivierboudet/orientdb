@@ -846,7 +846,8 @@ OTraverseStatement TraverseStatement():
 OMatchStatement MatchStatement():
 {
     OMatchExpression lastMatchExpr = null;
-    OIdentifier lastReturn = null;
+    OExpression lastReturn = null;
+    OIdentifier lastReturnAlias = null;
 }
 {
     (
@@ -857,10 +858,20 @@ OMatchStatement MatchStatement():
             lastMatchExpr = MatchExpression() { jjtThis.matchExpressions.add(lastMatchExpr); }
         )*
         <RETURN>
-        lastReturn = Identifier() { jjtThis.returnItems.add(lastReturn); }
+        lastReturn = Expression() {lastReturnAlias = null;}
+        [ <AS> lastReturnAlias = Identifier() ]
+        {
+            jjtThis.returnAliases.add(lastReturnAlias);
+            jjtThis.returnItems.add(lastReturn);
+        }
         (
             <COMMA>
-            lastReturn = Identifier() { jjtThis.returnItems.add(lastReturn); }
+            lastReturn = Expression() {lastReturnAlias = null;}
+            [ <AS> lastReturnAlias = Identifier() ]
+            {
+                jjtThis.returnAliases.add(lastReturnAlias);
+                jjtThis.returnItems.add(lastReturn);
+            }
         )*
         [ jjtThis.limit = Limit() ]
     ){ return jjtThis; }
@@ -886,6 +897,7 @@ ODeleteVertexStatement DeleteVertexStatement():
 (
 	<DELETE>
 	<VERTEX>
+	[ <FROM> {jjtThis.from = true;} ]
 	jjtThis.fromClause = FromClause()
 	[ <RETURN> <BEFORE> { jjtThis.returnBefore = true; } ]
 	[ <WHERE> jjtThis.whereClause = WhereClause() ]
@@ -1289,7 +1301,10 @@ OUpdateIncrementItem UpdateIncrementItem():
 {}
 {
     (
-	    jjtThis.left = Identifier() <EQ> jjtThis.right = Expression()
+	    jjtThis.left = Identifier() 
+	    [ jjtThis.leftModifier = Modifier() ]
+	    <EQ> 
+	    jjtThis.right = Expression()
 	)
 	{ return jjtThis; }
 }
@@ -1570,6 +1585,7 @@ OCreateEdgeStatement CreateEdgeStatement():
     [ jjtThis.body = InsertBody() ]
     [ jjtThis.retry = Retry() ]
     [ jjtThis.wait = Wait() ]
+    [ jjtThis.batch = Batch() ]
 ) {return jjtThis;}
 }
 
@@ -1939,7 +1955,15 @@ OMathExpression ParenthesisExpression():
 {}
 {
     (
-	    <LPAREN> ( jjtThis.expression = Expression() | jjtThis.statement = SelectStatement() ) <RPAREN>
+	    <LPAREN>
+	    (
+	        jjtThis.expression = Expression()
+	        |
+	        jjtThis.statement = SelectStatement()
+	        |
+            jjtThis.statement = InsertStatement()
+        )
+	    <RPAREN>
 	)
 	{return jjtThis;}
 }
@@ -2262,6 +2286,8 @@ OBinaryCompareOperator CompareOperator():
       | result = LuceneOperator()
       | result = NearOperator()
       | result = WithinOperator()
+      | result = ScAndOperator()
+
 ){return result;}
 }
 
@@ -2350,6 +2376,14 @@ OWithinOperator WithinOperator():
 {
 (
 	<WITHIN>
+){return jjtThis;}
+}
+
+OScAndOperator ScAndOperator():
+{}
+{
+(
+	<SC_AND>
 ){return jjtThis;}
 }
 
@@ -2917,6 +2951,8 @@ OJson Json():
             (
                 lastItem.leftIdentifier = Identifier()
                 |
+                token = <RECORD_ATTRIBUTE> {lastItem.leftString = token.image; }
+                |
                 token = <STRING_LITERAL> { lastItem.leftString = token.image.substring(1, token.image.length() - 1); }
                 |
                 token = <CHARACTER_LITERAL> { lastItem.leftString = token.image.substring(1, token.image.length() - 1); }
@@ -2928,6 +2964,8 @@ OJson Json():
                 { lastItem = new OJsonItem(); }
                 (
                     lastItem.leftIdentifier = Identifier()
+                    |
+                    token = <RECORD_ATTRIBUTE> {lastItem.leftString = token.image; }
                     |
                     token = <STRING_LITERAL> { lastItem.leftString = token.image.substring(1, token.image.length() - 1); }
                     |

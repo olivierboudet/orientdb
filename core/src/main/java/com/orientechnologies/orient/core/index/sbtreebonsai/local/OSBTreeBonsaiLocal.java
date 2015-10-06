@@ -34,16 +34,16 @@ import java.util.concurrent.locks.Lock;
 
 import com.orientechnologies.common.comparator.ODefaultComparator;
 import com.orientechnologies.common.concur.lock.ONewLockManager;
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.common.serialization.types.OBinarySerializer;
 import com.orientechnologies.common.types.OModifiableInteger;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.db.record.ridbag.sbtree.OBonsaiCollectionPointer;
 import com.orientechnologies.orient.core.db.record.ridbag.sbtree.OSBTreeRidBag;
+import com.orientechnologies.orient.core.exception.OSBTreeBonsaiLocalException;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.index.sbtree.local.OSBTree;
-import com.orientechnologies.orient.core.index.sbtree.local.OSBTreeException;
-import com.orientechnologies.orient.core.serialization.serializer.binary.OBinarySerializerFactory;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurableComponent;
@@ -62,24 +62,24 @@ import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODura
  * @since 1.6.0
  */
 public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTreeBonsai<K, V> {
-  private static final ONewLockManager<Integer> fileLockManager = new ONewLockManager<Integer>();
+  private static final ONewLockManager<Integer> fileLockManager       = new ONewLockManager<Integer>();
 
-  private static final int                  PAGE_SIZE             = OGlobalConfiguration.DISK_CACHE_PAGE_SIZE.getValueAsInteger()
-      * 1024;
-  private final float                       freeSpaceReuseTrigger = OGlobalConfiguration.SBTREEBOSAI_FREE_SPACE_REUSE_TRIGGER
-      .getValueAsFloat();
-  private static final OBonsaiBucketPointer SYS_BUCKET            = new OBonsaiBucketPointer(0, 0);
+  private static final int                      PAGE_SIZE             = OGlobalConfiguration.DISK_CACHE_PAGE_SIZE
+                                                                          .getValueAsInteger() * 1024;
+  private final float                           freeSpaceReuseTrigger = OGlobalConfiguration.SBTREEBOSAI_FREE_SPACE_REUSE_TRIGGER
+                                                                          .getValueAsFloat();
+  private static final OBonsaiBucketPointer     SYS_BUCKET            = new OBonsaiBucketPointer(0, 0);
 
-  private OBonsaiBucketPointer rootBucketPointer;
+  private OBonsaiBucketPointer                  rootBucketPointer;
 
-  private final Comparator<? super K> comparator = ODefaultComparator.INSTANCE;
+  private final Comparator<? super K>           comparator            = ODefaultComparator.INSTANCE;
 
-  private volatile long fileId = -1;
+  private volatile long                         fileId                = -1;
 
-  private OBinarySerializer<K> keySerializer;
-  private OBinarySerializer<V> valueSerializer;
+  private OBinarySerializer<K>                  keySerializer;
+  private OBinarySerializer<V>                  valueSerializer;
 
-  private final boolean durableInNonTxMode;
+  private final boolean                         durableInNonTxMode;
 
   public OSBTreeBonsaiLocal(String name, String dataFileExtension, boolean durableInNonTxMode, OAbstractPaginatedStorage storage) {
     super(storage, name, dataFileExtension);
@@ -92,7 +92,7 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OSBTreeException("Error during sbtree creation.", e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during sbtree creation", this), e);
     }
 
     Lock lock = fileLockManager.acquireExclusiveLock(-1);
@@ -110,10 +110,10 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
       endAtomicOperation(false, null);
     } catch (IOException e) {
       rollback(e);
-      throw new OSBTreeException("Error creation of sbtree with name" + getName(), e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error creation of sbtree with name" + getName(), this), e);
     } catch (Exception e) {
       rollback(e);
-      throw new OSBTreeException("Error creation of sbtree with name" + getName(), e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error creation of sbtree with name" + getName(), this), e);
     } finally {
       lock.unlock();
     }
@@ -198,7 +198,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
         lock.unlock();
       }
     } catch (IOException e) {
-      throw new OSBTreeException("Error during retrieving  of sbtree with name " + getName(), e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during retrieving  of sbtree with name " + getName(),
+          this), e);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -210,7 +211,7 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OSBTreeException("Error during sbtree entrie put.", e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during sbtree entrie put", this), e);
     }
 
     final Lock lock = fileLockManager.acquireExclusiveLock(fileId);
@@ -233,8 +234,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
       } else {
         int insertionIndex = -bucketSearchResult.itemIndex - 1;
 
-        while (!keyBucket.addEntry(insertionIndex,
-            new OSBTreeBonsaiBucket.SBTreeEntry<K, V>(OBonsaiBucketPointer.NULL, OBonsaiBucketPointer.NULL, key, value), true)) {
+        while (!keyBucket.addEntry(insertionIndex, new OSBTreeBonsaiBucket.SBTreeEntry<K, V>(OBonsaiBucketPointer.NULL,
+            OBonsaiBucketPointer.NULL, key, value), true)) {
           keyBucketCacheEntry.releaseExclusiveLock();
           releasePage(atomicOperation, keyBucketCacheEntry);
 
@@ -261,7 +262,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
       return result;
     } catch (IOException e) {
       rollback(e);
-      throw new OSBTreeException("Error during index update with key " + key + " and value " + value, e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during index update with key " + key + " and value "
+          + value, this), e);
     } finally {
       lock.unlock();
     }
@@ -280,7 +282,7 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     try {
       readCache.closeFile(fileId, flush, writeCache);
     } catch (IOException e) {
-      throw new OSBTreeException("Error during close of index " + getName(), e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during close of index " + getName(), this), e);
     } finally {
       lock.unlock();
     }
@@ -299,7 +301,7 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OSBTreeException("Error during sbtree entrie clear.", e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during sbtree entrie clear", this), e);
     }
 
     final Lock lock = fileLockManager.acquireExclusiveLock(fileId);
@@ -330,11 +332,12 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     } catch (IOException e) {
       rollback(e);
 
-      throw new OSBTreeException("Error during clear of sbtree with name " + getName(), e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during clear of sbtree with name " + getName(), this),
+          e);
     } catch (RuntimeException e) {
       rollback(e);
 
-      throw new OSBTreeException("Error during clear of sbtree with name " + getName(), e);
+      throw e;
     } finally {
       lock.unlock();
     }
@@ -418,7 +421,7 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OSBTreeException("Error during sbtree deletion.", e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during sbtree deletion", this), e);
     }
 
     final Lock lock = fileLockManager.acquireExclusiveLock(fileId);
@@ -431,7 +434,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     } catch (Exception e) {
       rollback(e);
 
-      throw new OSBTreeException("Error during delete of sbtree with name " + getName(), e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during delete of sbtree with name " + getName(), this),
+          e);
     } finally {
       lock.unlock();
     }
@@ -454,7 +458,7 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
  keySerializer, valueSerializer, getChanges(atomicOperation, rootCacheEntry));
         keySerializer = (OBinarySerializer<K>) OBinarySerializerFactory.getInstance()
             .getObjectSerializer(rootBucket.getKeySerializerId());
-        valueSerializer = (OBinarySerializer<V>) OBinarySerializerFactory.getInstance()
+        valueSerializer = (OBinarySerializer<V>) storage.getComponentsFactory().binarySerializerFactory
             .getObjectSerializer(rootBucket.getValueSerializerId());
       } finally {
         rootCacheEntry.releaseSharedLock();
@@ -462,7 +466,7 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
       }
 
     } catch (IOException e) {
-      throw new OSBTreeException("Exception during loading of sbtree " + fileId, e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Exception during loading of sbtree " + fileId, this), e);
     } finally {
       lock.unlock();
     }
@@ -502,7 +506,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
         lock.unlock();
       }
     } catch (IOException e) {
-      throw new OSBTreeException("Error during retrieving of size of index " + getName(), e);
+      throw OException.wrapException(
+          new OSBTreeBonsaiLocalException("Error during retrieving of size of index " + getName(), this), e);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -514,7 +519,7 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     try {
       atomicOperation = startAtomicOperation();
     } catch (IOException e) {
-      throw new OSBTreeException("Error during sbtree entrie removal.", e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during sbtree entrie removal", this), e);
     }
 
     Lock lock = fileLockManager.acquireExclusiveLock(fileId);
@@ -549,11 +554,12 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     } catch (IOException e) {
       rollback(e);
 
-      throw new OSBTreeException("Error during removing key " + key + " from sbtree " + getName(), e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during removing key " + key + " from sbtree "
+          + getName(), this), e);
     } catch (RuntimeException e) {
       rollback(e);
 
-      throw new OSBTreeException("Error during removing key " + key + " from sbtree " + getName(), e);
+      throw e;
     } finally {
       lock.unlock();
     }
@@ -626,7 +632,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
         lock.unlock();
       }
     } catch (IOException ioe) {
-      throw new OSBTreeException("Error during fetch of minor values for key " + key + " in sbtree " + getName(), ioe);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during fetch of minor values for key " + key
+          + " in sbtree " + getName(), this), ioe);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -703,15 +710,15 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
         lock.unlock();
       }
     } catch (IOException ioe) {
-      throw new OSBTreeException("Error during fetch of major values for key " + key + " in sbtree " + getName(), ioe);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during fetch of major values for key " + key
+          + " in sbtree " + getName(), this), ioe);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
   }
 
   @Override
-  public Collection<V> getValuesBetween(K keyFrom, boolean fromInclusive, K keyTo, boolean toInclusive,
-      final int maxValuesToFetch) {
+  public Collection<V> getValuesBetween(K keyFrom, boolean fromInclusive, K keyTo, boolean toInclusive, final int maxValuesToFetch) {
     final List<V> result = new ArrayList<V>();
     loadEntriesBetween(keyFrom, fromInclusive, keyTo, toInclusive, new RangeResultListener<K, V>() {
       @Override
@@ -797,7 +804,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
         lock.unlock();
       }
     } catch (IOException e) {
-      throw new OSBTreeException("Error during finding first key in sbtree [" + getName() + "]", e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException(
+          "Error during finding first key in sbtree [" + getName() + "]", this), e);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -873,15 +881,15 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
         lock.unlock();
       }
     } catch (IOException e) {
-      throw new OSBTreeException("Error during finding first key in sbtree [" + getName() + "]", e);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException(
+          "Error during finding first key in sbtree [" + getName() + "]", this), e);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
   }
 
   @Override
-  public void loadEntriesBetween(K keyFrom, boolean fromInclusive, K keyTo, boolean toInclusive,
-      RangeResultListener<K, V> listener) {
+  public void loadEntriesBetween(K keyFrom, boolean fromInclusive, K keyTo, boolean toInclusive, RangeResultListener<K, V> listener) {
     atomicOperationsManager.acquireReadLock(this);
     try {
       final Lock lock = fileLockManager.acquireSharedLock(fileId);
@@ -945,8 +953,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
         lock.unlock();
       }
     } catch (IOException ioe) {
-      throw new OSBTreeException(
-          "Error during fetch of values between key " + keyFrom + " and key " + keyTo + " in sbtree " + getName(), ioe);
+      throw OException.wrapException(new OSBTreeBonsaiLocalException("Error during fetch of values between key " + keyFrom
+          + " and key " + keyTo + " in sbtree " + getName(), this), ioe);
     } finally {
       atomicOperationsManager.releaseReadLock(this);
     }
@@ -1138,8 +1146,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
             valueSerializer, getChanges(atomicOperation, bucketEntry));
         bucketToSplit.setTreeSize(treeSize);
 
-        bucketToSplit.addEntry(0,
-            new OSBTreeBonsaiBucket.SBTreeEntry<K, V>(leftBucketPointer, rightBucketPointer, separationKey, null), true);
+        bucketToSplit.addEntry(0, new OSBTreeBonsaiBucket.SBTreeEntry<K, V>(leftBucketPointer, rightBucketPointer, separationKey,
+            null), true);
 
         ArrayList<OBonsaiBucketPointer> resultPath = new ArrayList<OBonsaiBucketPointer>(path.subList(0, path.size() - 1));
 
@@ -1249,8 +1257,8 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
 
           return new AllocationResult(new OBonsaiBucketPointer(pageIndex, 0), cacheEntry);
         } else {
-          sysBucket.setFreeSpacePointer(new OBonsaiBucketPointer(freeSpacePointer.getPageIndex(),
-              freeSpacePointer.getPageOffset() + OSBTreeBonsaiBucket.MAX_BUCKET_SIZE_BYTES));
+          sysBucket.setFreeSpacePointer(new OBonsaiBucketPointer(freeSpacePointer.getPageIndex(), freeSpacePointer.getPageOffset()
+              + OSBTreeBonsaiBucket.MAX_BUCKET_SIZE_BYTES));
           final OCacheEntry cacheEntry = loadPage(atomicOperation, fileId, freeSpacePointer.getPageIndex(), false);
 
           return new AllocationResult(freeSpacePointer, cacheEntry);
@@ -1383,15 +1391,15 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
     OSBTreeBonsaiBucket.SBTreeEntry<K, V> entry;
     try {
       final OSBTreeBonsaiBucket<K, V> keyBucket = new OSBTreeBonsaiBucket<K, V>(bucketEntry, bucketPointer.getPageOffset(),
-          keySerializer, valueSerializer, null);
+          keySerializer, valueSerializer, null, this);
       if (keyBucket.isLeaf()) {
         for (int i = 0; i < path.size(); i++)
           writer.append("\t");
         writer.append(" Leaf backet:" + bucketPointer.getPageIndex() + "|" + bucketPointer.getPageOffset());
-        writer
-            .append(" left bucket:" + keyBucket.getLeftSibling().getPageIndex() + "|" + keyBucket.getLeftSibling().getPageOffset());
-        writer.append(
-            " right bucket:" + keyBucket.getRightSibling().getPageIndex() + "|" + keyBucket.getRightSibling().getPageOffset());
+        writer.append(" left bucket:" + keyBucket.getLeftSibling().getPageIndex() + "|"
+            + keyBucket.getLeftSibling().getPageOffset());
+        writer.append(" right bucket:" + keyBucket.getRightSibling().getPageIndex() + "|"
+            + keyBucket.getRightSibling().getPageOffset());
         writer.append(" size:" + keyBucket.size());
         writer.append(" content: [");
         for (int index = 0; index < keyBucket.size(); index++) {
@@ -1403,10 +1411,10 @@ public class OSBTreeBonsaiLocal<K, V> extends ODurableComponent implements OSBTr
         for (int i = 0; i < path.size(); i++)
           writer.append("\t");
         writer.append(" node bucket:" + bucketPointer.getPageIndex() + "|" + bucketPointer.getPageOffset());
-        writer
-            .append(" left bucket:" + keyBucket.getLeftSibling().getPageIndex() + "|" + keyBucket.getLeftSibling().getPageOffset());
-        writer.append(
-            " right bucket:" + keyBucket.getRightSibling().getPageIndex() + "|" + keyBucket.getRightSibling().getPageOffset());
+        writer.append(" left bucket:" + keyBucket.getLeftSibling().getPageIndex() + "|"
+            + keyBucket.getLeftSibling().getPageOffset());
+        writer.append(" right bucket:" + keyBucket.getRightSibling().getPageIndex() + "|"
+            + keyBucket.getRightSibling().getPageOffset());
         writer.append("\n");
         for (int index = 0; index < keyBucket.size(); index++) {
           entry = keyBucket.getEntry(index);

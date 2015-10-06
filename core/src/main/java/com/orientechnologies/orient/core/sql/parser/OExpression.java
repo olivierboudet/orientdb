@@ -46,6 +46,32 @@ public class OExpression extends SimpleNode {
 
   }
 
+  public boolean isBaseIdentifier(){
+    if(value instanceof OMathExpression) {
+      return ((OMathExpression)value).isBaseIdentifier();
+    }
+
+    return false;
+  }
+
+  public boolean isEarlyCalculated(){
+    if(value instanceof Number) {
+      return true;
+    }
+    if(value instanceof String) {
+      return true;
+    }
+    if(value instanceof OInputParameter) {
+      return true;
+    }
+
+    if(value instanceof OMathExpression) {
+      return ((OMathExpression)value).isEarlyCalculated();
+    }
+
+    return false;
+  }
+
   public String getDefaultAlias() {
 
     if (value instanceof String) {
@@ -63,7 +89,8 @@ public class OExpression extends SimpleNode {
     // return null;// TODO
     // }
 
-    return "" + value;
+    return ("" + value).replaceAll("\\.", "_").replaceAll(" ", "_").replaceAll("\n", "_").replaceAll("\b", "_")
+        .replaceAll("\\[", "_").replaceAll("\\]", "_").replaceAll("\\(", "_").replaceAll("\\)", "_");
 
   }
 
@@ -87,12 +114,33 @@ public class OExpression extends SimpleNode {
     return s.replaceAll("\"", "\\\\\"");
   }
 
-
   public boolean supportsBasicCalculation() {
     if (value instanceof OMathExpression) {
       return ((OMathExpression) value).supportsBasicCalculation();
     }
     return true;
+  }
+
+  public boolean isIndexedFunctionCal() {
+    if (value instanceof OMathExpression) {
+      return ((OMathExpression) value).isIndexedFunctionCall();
+    }
+    return false;
+  }
+
+  public long estimateIndexedFunction(OFromClause target, OCommandContext context, OBinaryCompareOperator operator, Object right) {
+    if (value instanceof OMathExpression) {
+      return ((OMathExpression) value).estimateIndexedFunction(target, context, operator, right);
+    }
+    return -1;
+  }
+
+  public Iterable<OIdentifiable> executeIndexedFunction(OFromClause target, OCommandContext context,
+      OBinaryCompareOperator operator, Object right) {
+    if (value instanceof OMathExpression) {
+      return ((OMathExpression) value).executeIndexedFunction(target, context, operator, right);
+    }
+    return null;
   }
 }
 /* JavaCC - OriginalChecksum=9c860224b121acdc89522ae97010be01 (do not edit this line) */

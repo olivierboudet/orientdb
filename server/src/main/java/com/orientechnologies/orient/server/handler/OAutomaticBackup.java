@@ -20,6 +20,7 @@
 
 package com.orientechnologies.orient.server.handler;
 
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.io.OIOUtils;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.common.parser.OSystemVariableResolver;
@@ -39,12 +40,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TimerTask;
 
 public class OAutomaticBackup extends OServerPluginAbstract {
 
@@ -76,8 +73,15 @@ public class OAutomaticBackup extends OServerPluginAbstract {
       else if (param.name.equalsIgnoreCase("firstTime")) {
         try {
           firstTime = OIOUtils.getTodayWithTime(param.value);
+          if (firstTime.before(new Date())) {
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(firstTime);
+            cal.add(Calendar.DAY_OF_MONTH, 1);
+            firstTime = cal.getTime();
+          }
         } catch (ParseException e) {
-          throw new OConfigurationException("Parameter 'firstTime' has invalid format, expected: HH:mm:ss", e);
+          throw OException.wrapException(
+              new OConfigurationException("Parameter 'firstTime' has invalid format, expected: HH:mm:ss"), e);
         }
       } else if (param.name.equalsIgnoreCase("target.directory"))
         targetDirectory = param.value;

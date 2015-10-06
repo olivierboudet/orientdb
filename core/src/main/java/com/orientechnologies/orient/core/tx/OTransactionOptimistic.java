@@ -20,16 +20,7 @@
 
 package com.orientechnologies.orient.core.tx;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.orient.core.db.ODatabase.OPERATION_MODE;
 import com.orientechnologies.orient.core.db.OScenarioThreadLocal;
@@ -38,20 +29,14 @@ import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.db.record.ORecordOperation;
 import com.orientechnologies.orient.core.engine.local.OEngineLocalPaginated;
 import com.orientechnologies.orient.core.engine.memory.OEngineMemory;
-import com.orientechnologies.orient.core.exception.ODatabaseException;
-import com.orientechnologies.orient.core.exception.ORecordNotFoundException;
-import com.orientechnologies.orient.core.exception.OSchemaException;
-import com.orientechnologies.orient.core.exception.OStorageException;
-import com.orientechnologies.orient.core.exception.OTransactionException;
+import com.orientechnologies.orient.core.exception.*;
 import com.orientechnologies.orient.core.hook.ORecordHook.RESULT;
 import com.orientechnologies.orient.core.hook.ORecordHook.TYPE;
 import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.id.ORecordId;
 import com.orientechnologies.orient.core.index.OIndex;
-import com.orientechnologies.orient.core.index.OIndexAbstract;
 import com.orientechnologies.orient.core.index.OIndexException;
 import com.orientechnologies.orient.core.index.OIndexInternal;
-import com.orientechnologies.orient.core.metadata.OMetadataDefault;
 import com.orientechnologies.orient.core.metadata.OMetadataInternal;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.security.ORole;
@@ -66,11 +51,18 @@ import com.orientechnologies.orient.core.storage.OStorage;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import com.orientechnologies.orient.core.version.ORecordVersion;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class OTransactionOptimistic extends OTransactionRealAbstract {
   private static AtomicInteger txSerial = new AtomicInteger();
 
-  private boolean usingLog = true;
-  private int     txStartCounter;
+  private boolean              usingLog = true;
+  private int                  txStartCounter;
 
   private class CommitIndexesCallback implements Runnable {
     private final Map<String, OIndex<?>> indexes;
@@ -230,11 +222,11 @@ public class OTransactionOptimistic extends OTransactionRealAbstract {
 
     if (txRecord != null) {
       if (iRecord != null && txRecord != iRecord)
-        OLogManager.instance().warn(this,
+        OLogManager.instance().warn(
+            this,
             "Found record in transaction with the same RID %s but different instance. "
                 + "Probably the record has been loaded from another transaction and reused on the current one: reload it "
-                + "from current transaction before to update or delete it",
-            iRecord.getIdentity());
+                + "from current transaction before to update or delete it", iRecord.getIdentity());
       return txRecord;
     }
 
@@ -242,8 +234,8 @@ public class OTransactionOptimistic extends OTransactionRealAbstract {
       return null;
 
     // DELEGATE TO THE STORAGE, NO TOMBSTONES SUPPORT IN TX MODE
-    final ORecord record = database.executeReadRecord((ORecordId) rid, iRecord, null, fetchPlan, ignoreCache, iUpdateCache, loadTombstone,
-        lockingStrategy, new ODatabaseDocumentTx.SimpleRecordReader());
+    final ORecord record = database.executeReadRecord((ORecordId) rid, iRecord, null, fetchPlan, ignoreCache, iUpdateCache,
+        loadTombstone, lockingStrategy, new ODatabaseDocumentTx.SimpleRecordReader());
 
     if (record != null && isolationLevel == ISOLATION_LEVEL.REPEATABLE_READ)
       // KEEP THE RECORD IN TX TO ASSURE REPEATABLE READS
@@ -299,11 +291,11 @@ public class OTransactionOptimistic extends OTransactionRealAbstract {
 
     if (txRecord != null) {
       if (passedRecord != null && txRecord != passedRecord)
-        OLogManager.instance().warn(this,
+        OLogManager.instance().warn(
+            this,
             "Found record in transaction with the same RID %s but different instance. "
                 + "Probably the record has been loaded from another transaction and reused on the current one: reload it "
-                + "from current transaction before to update or delete it",
-            passedRecord.getIdentity());
+                + "from current transaction before to update or delete it", passedRecord.getIdentity());
       return txRecord;
     }
 
@@ -394,8 +386,8 @@ public class OTransactionOptimistic extends OTransactionRealAbstract {
     } while (dirtyManager.getNewRecord() != null || dirtyManager.getUpdateRecord() != null);
 
     if (!originalSaved && iRecord.isDirty()) {
-      final byte operation = iForceCreate ? ORecordOperation.CREATED
-          : iRecord.getIdentity().isValid() ? ORecordOperation.UPDATED : ORecordOperation.CREATED;
+      final byte operation = iForceCreate ? ORecordOperation.CREATED : iRecord.getIdentity().isValid() ? ORecordOperation.UPDATED
+          : ORecordOperation.CREATED;
       addRecord(iRecord, operation, iClusterName);
     }
     return iRecord;
@@ -550,7 +542,7 @@ public class OTransactionOptimistic extends OTransactionRealAbstract {
           ODocumentInternal.clearTrackData(((ODocument) iRecord));
         }
 
-      } catch (Throwable t) {
+      } catch (Exception e) {
         switch (iStatus) {
         case ORecordOperation.CREATED:
           database.callbackHooks(TYPE.CREATE_FAILED, iRecord);
@@ -563,10 +555,7 @@ public class OTransactionOptimistic extends OTransactionRealAbstract {
           break;
         }
 
-        if (t instanceof RuntimeException)
-          throw (RuntimeException) t;
-        else
-          throw new ODatabaseException("Error on saving record " + iRecord.getIdentity(), t);
+        throw OException.wrapException(new ODatabaseException("Error on saving record " + iRecord.getIdentity()), e);
       }
     } finally {
       switch (iStatus) {
@@ -582,7 +571,7 @@ public class OTransactionOptimistic extends OTransactionRealAbstract {
 
   private void doCommit() {
     if (status == TXSTATUS.ROLLED_BACK || status == TXSTATUS.ROLLBACKING)
-      throw new ORollbackException("Given transaction was rolled back and can not be used.");
+      throw new ORollbackException("Given transaction was rolled back and cannot be used.");
 
     status = TXSTATUS.COMMITTING;
 
@@ -591,29 +580,24 @@ public class OTransactionOptimistic extends OTransactionRealAbstract {
           && !(database.getStorage().getUnderlying() instanceof OAbstractPaginatedStorage))
         database.getStorage().commit(this, null);
       else {
-        List<OIndexAbstract<?>> lockedIndexes = acquireIndexLocks();
-        try {
-          final Map<String, OIndex<?>> indexes = new HashMap<String, OIndex<?>>();
-          for (OIndex<?> index : database.getMetadata().getIndexManager().getIndexes())
-            indexes.put(index.getName(), index);
+        final Map<String, OIndex<?>> indexes = new HashMap<String, OIndex<?>>();
+        for (OIndex<?> index : database.getMetadata().getIndexManager().getIndexes())
+          indexes.put(index.getName(), index);
 
-          final Runnable callback = new CommitIndexesCallback(indexes);
+        final Runnable callback = new CommitIndexesCallback(indexes);
 
-          final String storageType = database.getStorage().getUnderlying().getType();
+        final String storageType = database.getStorage().getUnderlying().getType();
 
-          if (storageType.equals(OEngineLocalPaginated.NAME) || storageType.equals(OEngineMemory.NAME))
-            database.getStorage().commit(OTransactionOptimistic.this, callback);
-          else {
-            database.getStorage().callInLock(new Callable<Object>() {
-              @Override
-              public Object call() throws Exception {
-                database.getStorage().commit(OTransactionOptimistic.this, callback);
-                return null;
-              }
-            }, true);
-          }
-        } finally {
-          releaseIndexLocks(lockedIndexes);
+        if (storageType.equals(OEngineLocalPaginated.NAME) || storageType.equals(OEngineMemory.NAME))
+          database.getStorage().commit(OTransactionOptimistic.this, callback);
+        else {
+          database.getStorage().callInLock(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+              database.getStorage().commit(OTransactionOptimistic.this, callback);
+              return null;
+            }
+          }, true);
         }
       }
     }
@@ -623,37 +607,4 @@ public class OTransactionOptimistic extends OTransactionRealAbstract {
     status = TXSTATUS.COMPLETED;
   }
 
-  private List<OIndexAbstract<?>> acquireIndexLocks() {
-    List<OIndexAbstract<?>> lockedIndexes = null;
-    final List<String> involvedIndexes = getInvolvedIndexes();
-
-    if (involvedIndexes != null)
-      Collections.sort(involvedIndexes);
-
-    try {
-      // LOCK INVOLVED INDEXES
-      if (involvedIndexes != null)
-        for (String indexName : involvedIndexes) {
-          final OIndexAbstract<?> index = (OIndexAbstract<?>) database.getMetadata().getIndexManager().getIndexInternal(indexName);
-          if (lockedIndexes == null)
-            lockedIndexes = new ArrayList<OIndexAbstract<?>>();
-
-          index.acquireModificationLock();
-          lockedIndexes.add(index);
-        }
-
-      return lockedIndexes;
-    } catch (RuntimeException e) {
-      releaseIndexLocks(lockedIndexes);
-      throw e;
-    }
-  }
-
-  private void releaseIndexLocks(List<OIndexAbstract<?>> lockedIndexes) {
-    if (lockedIndexes != null) {
-      for (OIndexAbstract<?> index : lockedIndexes)
-        index.releaseModificationLock();
-
-    }
-  }
 }

@@ -20,6 +20,7 @@
 package com.orientechnologies.orient.object.db;
 
 import com.orientechnologies.common.collection.OMultiValue;
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.common.util.OCommonConst;
 import com.orientechnologies.orient.core.Orient;
@@ -29,7 +30,6 @@ import com.orientechnologies.orient.core.db.ODatabase;
 import com.orientechnologies.orient.core.db.ODatabaseDocumentInternal;
 import com.orientechnologies.orient.core.db.ODatabaseInternal;
 import com.orientechnologies.orient.core.db.ODatabaseListener;
-import com.orientechnologies.orient.core.db.OUserObject2RecordHandler;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.db.object.ODatabaseObject;
 import com.orientechnologies.orient.core.db.record.OIdentifiable;
@@ -81,8 +81,7 @@ import java.util.Map;
  * @author Luca Molino
  */
 @SuppressWarnings("unchecked")
-public class OObjectDatabaseTx extends ODatabasePojoAbstract<Object> implements ODatabaseObject, ODatabaseInternal<Object>,
-    OUserObject2RecordHandler {
+public class OObjectDatabaseTx extends ODatabasePojoAbstract<Object> implements ODatabaseObject, ODatabaseInternal<Object> {
 
   public static final String    TYPE = "object";
   protected ODictionary<Object> dictionary;
@@ -175,9 +174,11 @@ public class OObjectDatabaseTx extends ODatabasePojoAbstract<Object> implements 
             + " cannot be serialized because is not part of registered entities. To fix this error register this class");
       }
     } catch (Exception e) {
-      OLogManager.instance().error(this, "Error on creating object of class " + iClassName, e, ODatabaseException.class);
+      final String message = "Error on creating object of class " + iClassName;
+      OLogManager.instance().error(this, message, e);
+
+      throw OException.wrapException(new ODatabaseException(message), e);
     }
-    return null;
   }
 
   /**
@@ -201,9 +202,11 @@ public class OObjectDatabaseTx extends ODatabasePojoAbstract<Object> implements 
             + " cannot be serialized because is not part of registered entities. To fix this error register this class");
       }
     } catch (Exception e) {
-      OLogManager.instance().error(this, "Error on creating object of class " + iClassName, e, ODatabaseException.class);
+      final String message = "Error on creating object of class " + iClassName;
+      OLogManager.instance().error(this, message, e);
+
+      throw OException.wrapException(new ODatabaseException(message), e);
     }
-    return null;
   }
 
   public <RET> OObjectIteratorClass<RET> browseClass(final Class<RET> iClusterClass) {
@@ -335,7 +338,7 @@ public class OObjectDatabaseTx extends ODatabasePojoAbstract<Object> implements 
   @Deprecated
   public <RET> RET load(Object iPojo, String iFetchPlan, boolean iIgnoreCache, boolean loadTombstone,
       OStorage.LOCKING_STRATEGY iLockingStrategy) {
-    return load(iPojo, iFetchPlan, iIgnoreCache, loadTombstone, iLockingStrategy);
+    return load(iPojo, iFetchPlan, iIgnoreCache, !iIgnoreCache, loadTombstone, iLockingStrategy);
   }
 
   @Override
@@ -801,11 +804,22 @@ public class OObjectDatabaseTx extends ODatabasePojoAbstract<Object> implements 
   }
 
   @Override
+  public void incrementalBackup(String path) {
+    underlying.incrementalBackup(path);
+  }
+
+  @Override
+  public void incrementalRestore(String path) {
+    underlying.incrementalRestore(path);
+  }
+
+  @Override
   public void resetInitialization() {
     underlying.resetInitialization();
   }
 
-  protected <RET> RET detachAll(final Object iPojo, boolean returnNonProxiedInstance, Map<Object, Object> alreadyDetached, Map<Object, Object> lazyObjects) {
+  protected <RET> RET detachAll(final Object iPojo, boolean returnNonProxiedInstance, Map<Object, Object> alreadyDetached,
+      Map<Object, Object> lazyObjects) {
     return (RET) OObjectEntitySerializer.detachAll(iPojo, this, returnNonProxiedInstance, alreadyDetached, lazyObjects);
   }
 

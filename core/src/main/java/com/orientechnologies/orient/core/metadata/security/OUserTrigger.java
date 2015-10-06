@@ -22,12 +22,11 @@ package com.orientechnologies.orient.core.metadata.security;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.exception.OSecurityException;
 import com.orientechnologies.orient.core.hook.ODocumentHookAbstract;
-import com.orientechnologies.orient.core.hook.ORecordHook.RESULT;
+import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OImmutableClass;
 import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.record.impl.ODocumentInternal;
-import com.orientechnologies.orient.core.security.OSecurityManager;
 
 /**
  * Encrypt the password using the SHA-256 algorithm.
@@ -35,6 +34,8 @@ import com.orientechnologies.orient.core.security.OSecurityManager;
  * @author Luca Garulli
  */
 public class OUserTrigger extends ODocumentHookAbstract {
+  private OClass userClass;
+  private OClass roleClass;
 
   public OUserTrigger(ODatabaseDocument database) {
     super(database);
@@ -56,19 +57,16 @@ public class OUserTrigger extends ODocumentHookAbstract {
 
   @Override
   public RESULT onRecordBeforeCreate(final ODocument iDocument) {
-    if ("OUser".equalsIgnoreCase(iDocument.getClassName()))
+    if (ODocumentInternal.getImmutableSchemaClass(iDocument).isOuser())
       return encodePassword(iDocument);
+
     return RESULT.RECORD_NOT_CHANGED;
   }
 
   @Override
   public RESULT onRecordBeforeUpdate(final ODocument iDocument) {
-
-    if ("OUser".equalsIgnoreCase(iDocument.getClassName())) {
-      // REMOVE THE USER FROM THE CACHE
-      final OSecurity sec = database.getMetadata().getSecurity().getUnderlying();
+    if (ODocumentInternal.getImmutableSchemaClass(iDocument).isOuser())
       return encodePassword(iDocument);
-    }
 
     return RESULT.RECORD_NOT_CHANGED;
   }
@@ -82,7 +80,7 @@ public class OUserTrigger extends ODocumentHookAbstract {
     if (password == null)
       throw new OSecurityException("User '" + iDocument.field("name") + "' has no password");
 
-    if (!password.startsWith(OSecurityManager.ALGORITHM_PREFIX)) {
+    if (!password.startsWith("{")) {
       iDocument.field("password", OUser.encryptPassword(password));
       return RESULT.RECORD_CHANGED;
     }

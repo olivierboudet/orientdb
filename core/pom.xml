@@ -28,7 +28,7 @@
     <name>OrientDB Core</name>
 
     <properties>
-	<executeFindBugs>true</executeFindBugs>
+        <executeFindBugs>true</executeFindBugs>
         <osgi.import>
             com.orientechnologies.orient.graph.console;resolution:=optional,
             com.orientechnologies.orient.graph.gremlin;resolution:=optional,
@@ -45,7 +45,7 @@
         </osgi.export>
         <jna.version>4.0.0</jna.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <argLine>-ea -Xmx2048m
+        <argLine>-ea -Xmx3072m
             -Dindex.flushAfterCreate=false
             -Dstorage.makeFullCheckpointAfterCreate=false
             -Dstorage.makeFullCheckpointAfterOpen=false
@@ -54,6 +54,7 @@
             -Dstorage.configuration.syncOnUpdate=false
             -Ddb.makeFullCheckpointOnIndexChange=false
             -Ddb.makeFullCheckpointOnSchemaChange=false
+            -Dsecurity.userPasswordSaltIterations=10
         </argLine>
     </properties>
 
@@ -72,33 +73,33 @@
                 <exclude.test.6>**/LocalPaginatedClusterTest.java</exclude.test.6>
             </properties>
             <build>
-	     <plugins>
-              <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.1</version>
-                <configuration>
-                    <effort>Max</effort>
-                    <threshold>Low</threshold>
-                    <xmlOutput>true</xmlOutput>
-                    <findbugsXmlOutput>true</findbugsXmlOutput>
-                    <includeFilterFile>findbugs_filter.xml</includeFilterFile>
-                </configuration>
-                <executions>
-                    <!--
-                        Ensures that FindBugs inspects source code when project is compiled.
-                    -->
-                    <execution>
-                        <id>analyze-compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-              </plugin>
-	    </plugins>
-           </build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>findbugs-maven-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <configuration>
+                            <effort>Max</effort>
+                            <threshold>Low</threshold>
+                            <xmlOutput>true</xmlOutput>
+                            <findbugsXmlOutput>true</findbugsXmlOutput>
+                            <includeFilterFile>findbugs_filter.xml</includeFilterFile>
+                        </configuration>
+                        <executions>
+                            <!--
+                                Ensures that FindBugs inspects source code when project is compiled.
+                            -->
+                            <execution>
+                                <id>analyze-compile</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <profile>
@@ -118,33 +119,33 @@
                 <exclude.test.6>empty.java</exclude.test.6>
             </properties>
             <build>
-	     <plugins>
-              <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.1</version>
-                <configuration>
-                    <effort>Max</effort>
-                    <threshold>Low</threshold>
-                    <xmlOutput>true</xmlOutput>
-                    <findbugsXmlOutput>true</findbugsXmlOutput>
-                    <includeFilterFile>findbugs_filter.xml</includeFilterFile>
-                </configuration>
-                <executions>
-                    <!--
-                        Ensures that FindBugs inspects source code when project is compiled.
-                    -->
-                    <execution>
-                        <id>analyze-compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-              </plugin>
-	    </plugins>
-           </build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>findbugs-maven-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <configuration>
+                            <effort>Max</effort>
+                            <threshold>Low</threshold>
+                            <xmlOutput>true</xmlOutput>
+                            <findbugsXmlOutput>true</findbugsXmlOutput>
+                            <includeFilterFile>findbugs_filter.xml</includeFilterFile>
+                        </configuration>
+                        <executions>
+                            <!--
+                                Ensures that FindBugs inspects source code when project is compiled.
+                            -->
+                            <execution>
+                                <id>analyze-compile</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <id>release</id>
@@ -163,33 +164,33 @@
                 <exclude.test.6>empty.java</exclude.test.6>
             </properties>
             <build>
-	     <plugins>
-              <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.1</version>
-                <configuration>
-                    <effort>Max</effort>
-                    <threshold>Low</threshold>
-                    <xmlOutput>true</xmlOutput>
-                    <findbugsXmlOutput>true</findbugsXmlOutput>
-                    <includeFilterFile>findbugs_filter.xml</includeFilterFile>
-                </configuration>
-                <executions>
-                    <!--
-                        Ensures that FindBugs inspects source code when project is compiled.
-                    -->
-                    <execution>
-                        <id>analyze-compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-              </plugin>
-	    </plugins>
-           </build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>findbugs-maven-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <configuration>
+                            <effort>Max</effort>
+                            <threshold>Low</threshold>
+                            <xmlOutput>true</xmlOutput>
+                            <findbugsXmlOutput>true</findbugsXmlOutput>
+                            <includeFilterFile>findbugs_filter.xml</includeFilterFile>
+                        </configuration>
+                        <executions>
+                            <!--
+                                Ensures that FindBugs inspects source code when project is compiled.
+                            -->
+                            <execution>
+                                <id>analyze-compile</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <id>localDeploy</id>
@@ -274,6 +275,12 @@
             <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
             <artifactId>concurrentlinkedhashmap-lru</artifactId>
             <version>1.4.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -293,18 +300,6 @@
             <groupId>com.orientechnologies</groupId>
             <artifactId>orientdb-test-commons</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>6.8.8</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.9.5</version>
             <scope>test</scope>
         </dependency>
 

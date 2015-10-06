@@ -20,7 +20,9 @@
 
 package com.orientechnologies.orient.core.storage.impl.local.paginated;
 
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.util.OCommonConst;
+import com.orientechnologies.orient.core.exception.OClusterPositionMapException;
 import com.orientechnologies.orient.core.exception.OStorageException;
 import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
@@ -38,8 +40,8 @@ import java.util.Arrays;
 public class OClusterPositionMap extends ODurableComponent {
   public static final String DEF_EXTENSION = ".cpm";
 
-  private long fileId;
-  private boolean useWal;
+  private long               fileId;
+  private boolean            useWal;
 
   public OClusterPositionMap(OAbstractPaginatedStorage storage, String name, boolean useWal) {
     super(storage, name, DEF_EXTENSION);
@@ -83,7 +85,8 @@ public class OClusterPositionMap extends ODurableComponent {
       throw ioe;
     } catch (Exception e) {
       endAtomicOperation(true, e);
-      throw new OStorageException("Error during cluster position - physical position map.", e);
+      throw OException.wrapException(
+          new OClusterPositionMapException("Error during cluster position - physical position map", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -123,7 +126,8 @@ public class OClusterPositionMap extends ODurableComponent {
       throw ioe;
     } catch (Exception e) {
       endAtomicOperation(true, e);
-      throw new OStorageException("Error during truncation of cluster position - physical position map", e);
+      throw OException.wrapException(new OClusterPositionMapException(
+          "Error during truncation of cluster position - physical position map", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -141,7 +145,8 @@ public class OClusterPositionMap extends ODurableComponent {
       throw ioe;
     } catch (Exception e) {
       endAtomicOperation(true, e);
-      throw new OStorageException("Error during deletion of cluster position - physical position map.", e);
+      throw OException.wrapException(new OClusterPositionMapException(
+          "Error during deletion of cluster position - physical position map", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -159,7 +164,8 @@ public class OClusterPositionMap extends ODurableComponent {
       throw ioe;
     } catch (Exception e) {
       endAtomicOperation(true, e);
-      throw new OStorageException("Error during rename of cluster position - physical position map.", e);
+      throw OException.wrapException(new OClusterPositionMapException(
+          "Error during rename of cluster position - physical position map", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -198,7 +204,8 @@ public class OClusterPositionMap extends ODurableComponent {
         return result;
       } catch (Exception e) {
         endAtomicOperation(true, e);
-        throw new OStorageException("Error during creation of mapping between logical adn physical record position.", e);
+        throw OException.wrapException(new OClusterPositionMapException(
+            "Error during creation of mapping between logical adn physical record position", this), e);
       } finally {
         cacheEntry.releaseExclusiveLock();
         releasePage(atomicOperation, cacheEntry);
@@ -217,8 +224,8 @@ public class OClusterPositionMap extends ODurableComponent {
       int index = (int) (clusterPosition % OClusterPositionMapBucket.MAX_ENTRIES);
 
       if (pageIndex >= getFilledUpTo(atomicOperation, fileId))
-        throw new OStorageException("Passed in cluster position " + clusterPosition
-            + " is outside of range of cluster-position map.");
+        throw new OClusterPositionMapException("Passed in cluster position " + clusterPosition
+            + " is outside of range of cluster-position map.", this);
 
       final OCacheEntry cacheEntry = loadPage(atomicOperation, fileId, pageIndex, false);
       cacheEntry.acquireExclusiveLock();
@@ -234,10 +241,12 @@ public class OClusterPositionMap extends ODurableComponent {
       endAtomicOperation(false, null);
     } catch (IOException e) {
       endAtomicOperation(true, e);
-      throw new OStorageException("Error of update of mapping between logical adn physical record position.", e);
+      throw OException.wrapException(new OClusterPositionMapException(
+          "Error of update of mapping between logical adn physical record position", this), e);
     } catch (RuntimeException e) {
       endAtomicOperation(true, e);
-      throw new OStorageException("Error of update of mapping between logical adn physical record position.", e);
+      throw OException.wrapException(new OClusterPositionMapException(
+          "Error of update of mapping between logical adn physical record position", this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -299,7 +308,8 @@ public class OClusterPositionMap extends ODurableComponent {
       } catch (Exception e) {
         endAtomicOperation(true, e);
 
-        throw new OStorageException("Error during removal of mapping between logical and physical record position.", e);
+        throw OException.wrapException(new OClusterPositionMapException(
+            "Error during removal of mapping between logical and physical record position", this), e);
       } finally {
         cacheEntry.releaseExclusiveLock();
         releasePage(atomicOperation, cacheEntry);
@@ -537,21 +547,6 @@ public class OClusterPositionMap extends ODurableComponent {
       atomicOperationsManager.releaseReadLock(this);
     }
   }
-
-  public boolean wasSoftlyClosed() throws IOException {
-    atomicOperationsManager.acquireReadLock(this);
-    try {
-      acquireSharedLock();
-      try {
-        return writeCache.wasSoftlyClosed(fileId);
-      } finally {
-        releaseSharedLock();
-      }
-    } finally {
-      atomicOperationsManager.releaseReadLock(this);
-    }
-  }
-
 
   @Override
   protected OAtomicOperation startAtomicOperation() throws IOException {

@@ -20,7 +20,6 @@
 package com.orientechnologies.orient.core.storage;
 
 import com.orientechnologies.common.concur.resource.OSharedContainer;
-import com.orientechnologies.common.concur.resource.OSharedResourceAdaptiveExternal;
 import com.orientechnologies.orient.core.command.OCommandRequestText;
 import com.orientechnologies.orient.core.config.OStorageConfiguration;
 import com.orientechnologies.orient.core.conflict.ORecordConflictStrategy;
@@ -189,7 +188,6 @@ public interface OStorage extends OBackupable, OSharedContainer {
 
   void synch();
 
-
   /**
    * Execute the command request and return the result back.
    */
@@ -232,11 +230,13 @@ public interface OStorage extends OBackupable, OSharedContainer {
 
   OStorage getUnderlying();
 
+  boolean isRemote();
+
   boolean isDistributed();
 
   boolean isAssigningClusterIds();
 
-  Class<? extends OSBTreeCollectionManager> getCollectionManagerClass();
+  OSBTreeCollectionManager getSBtreeCollectionManager();
 
   OCurrentStorageComponentsFactory getComponentsFactory();
 
@@ -249,4 +249,8 @@ public interface OStorage extends OBackupable, OSharedContainer {
   ORecordConflictStrategy getConflictStrategy();
 
   void setConflictStrategy(ORecordConflictStrategy iResolver);
+
+  void incrementalBackup(String backupDirectory);
+
+  void restoreFromIncrementalBackup(String filePath);
 }

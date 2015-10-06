@@ -19,18 +19,14 @@
  */
 package com.orientechnologies.orient.core.tx;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
 import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.orient.core.db.ODatabase.OPERATION_MODE;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.db.record.OIdentifiable;
 import com.orientechnologies.orient.core.db.record.ORecordOperation;
+import com.orientechnologies.orient.core.exception.ODatabaseException;
 import com.orientechnologies.orient.core.exception.ORecordNotFoundException;
+import com.orientechnologies.orient.core.exception.OTransactionException;
 import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.id.ORecordId;
 import com.orientechnologies.orient.core.index.OIndex;
@@ -39,12 +35,15 @@ import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.ORecordInternal;
 import com.orientechnologies.orient.core.record.impl.ODirtyManager;
 import com.orientechnologies.orient.core.record.impl.ODocument;
-import com.orientechnologies.orient.core.record.impl.ODocumentInternal;
-import com.orientechnologies.orient.core.serialization.serializer.record.OSerializationSetThreadLocal;
 import com.orientechnologies.orient.core.storage.ORecordCallback;
 import com.orientechnologies.orient.core.storage.OStorage;
 import com.orientechnologies.orient.core.tx.OTransactionIndexChanges.OPERATION;
 import com.orientechnologies.orient.core.version.ORecordVersion;
+
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * No operation transaction.
@@ -173,8 +172,8 @@ public class OTransactionNoTx extends OTransactionAbstract {
       if (newRecord != null) {
         for (ORecord rec : newRecord) {
           if (rec.getIdentity().isNew() && rec instanceof ODocument) {
-            ORecord ret = saveNew((ODocument) rec, dirtyManager, iClusterName, iRecord, iMode, iForceCreate, iRecordCreatedCallback,
-                iRecordUpdatedCallback);
+            ORecord ret = saveNew((ODocument) rec, dirtyManager, iClusterName, iRecord, iMode, iForceCreate,
+                iRecordCreatedCallback, iRecordUpdatedCallback);
             if (ret != null)
               toRet = ret;
           }
@@ -183,8 +182,8 @@ public class OTransactionNoTx extends OTransactionAbstract {
       if (updatedRecord != null) {
         for (ORecord rec : updatedRecord) {
           if (rec == iRecord) {
-            toRet = database.executeSaveRecord(rec, iClusterName, rec.getRecordVersion(), iMode, iForceCreate, iRecordCreatedCallback,
-                iRecordUpdatedCallback);
+            toRet = database.executeSaveRecord(rec, iClusterName, rec.getRecordVersion(), iMode, iForceCreate,
+                iRecordCreatedCallback, iRecordUpdatedCallback);
           } else
             database.executeSaveRecord(rec, getClusterName(rec), rec.getRecordVersion(), OPERATION_MODE.SYNCHRONOUS, false, null,
                 null);
@@ -194,17 +193,16 @@ public class OTransactionNoTx extends OTransactionAbstract {
       if (toRet != null)
         return toRet;
       else
-        return database.executeSaveRecord(iRecord, iClusterName, iRecord.getRecordVersion(), iMode, iForceCreate, iRecordCreatedCallback,
-            iRecordUpdatedCallback);
+        return database.executeSaveRecord(iRecord, iClusterName, iRecord.getRecordVersion(), iMode, iForceCreate,
+            iRecordCreatedCallback, iRecordUpdatedCallback);
     } catch (Exception e) {
       // REMOVE IT FROM THE CACHE TO AVOID DIRTY RECORDS
       final ORecordId rid = (ORecordId) iRecord.getIdentity();
       if (rid.isValid())
         database.getLocalCache().freeRecord(rid);
 
-      if (e instanceof RuntimeException)
-        throw (RuntimeException) e;
-      throw new OException(e);
+      throw OException.wrapException(new ODatabaseException("Error during saving of record" + iRecord != null ? " with rid "
+          + iRecord.getIdentity() : ""), e);
     }
   }
 
@@ -232,20 +230,20 @@ public class OTransactionNoTx extends OTransactionAbstract {
         if (nextToInspect != null) {
           if (path.contains(nextToInspect)) {
             if (nextToInspect == original)
-              database.executeSaveEmptyRecord(nextToInspect,iClusterName);
+              database.executeSaveEmptyRecord(nextToInspect, iClusterName);
             else
-              database.executeSaveEmptyRecord(nextToInspect,getClusterName(nextToInspect));
+              database.executeSaveEmptyRecord(nextToInspect, getClusterName(nextToInspect));
           } else {
             path.push((ODocument) next);
             next = nextToInspect;
           }
         } else {
           if (next == original)
-            toRet = database.executeSaveRecord(next, iClusterName, next.getRecordVersion(), iMode, iForceCreate, iRecordCreatedCallback,
-                iRecordUpdatedCallback);
+            toRet = database.executeSaveRecord(next, iClusterName, next.getRecordVersion(), iMode, iForceCreate,
+                iRecordCreatedCallback, iRecordUpdatedCallback);
           else
-            database.executeSaveRecord(next, getClusterName(next), next.getRecordVersion(), OPERATION_MODE.SYNCHRONOUS, false, null,
-                null);
+            database.executeSaveRecord(next, getClusterName(next), next.getRecordVersion(), OPERATION_MODE.SYNCHRONOUS, false,
+                null, null);
           next = path.pollFirst();
         }
 
@@ -281,7 +279,8 @@ public class OTransactionNoTx extends OTransactionAbstract {
 
       if (e instanceof RuntimeException)
         throw (RuntimeException) e;
-      throw new OException(e);
+      throw OException.wrapException(new ODatabaseException("Error during deletion of record" + iRecord != null ? " with rid "
+          + iRecord.getIdentity() : ""), e);
     }
   }
 
@@ -318,6 +317,16 @@ public class OTransactionNoTx extends OTransactionAbstract {
 
   public boolean isUsingLog() {
     return false;
+  }
+
+  @Override
+  public void setCustomData(String iName, Object iValue) {
+
+  }
+
+  @Override
+  public Object getCustomData(String iName) {
+    return null;
   }
 
   public void setUsingLog(final boolean useLog) {

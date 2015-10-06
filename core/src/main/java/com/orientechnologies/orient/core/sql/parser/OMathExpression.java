@@ -176,7 +176,6 @@ public class OMathExpression extends SimpleNode {
     super(p, id);
   }
 
-
   public Object execute(OIdentifiable iCurrentRecord, OCommandContext ctx) {
     if (childExpressions.size() == 0) {
       return null;
@@ -191,7 +190,6 @@ public class OMathExpression extends SimpleNode {
     }
     return nextValue;
   }
-
 
   /** Accept the visitor. **/
   public Object jjtAccept(OrientSqlVisitor visitor, Object data) {
@@ -242,6 +240,9 @@ public class OMathExpression extends SimpleNode {
     }
     if (a instanceof Number && b instanceof Number) {
       return apply((Number) a, operation, (Number) b);
+    }
+    if (a instanceof String || b instanceof String) {
+      return "" + a + b;
     }
     throw new IllegalArgumentException("Cannot apply operaton " + operation + " to value '" + a + "' (" + a.getClass() + ") with '"
         + b + "' (" + b.getClass() + ")");
@@ -314,6 +315,44 @@ public class OMathExpression extends SimpleNode {
     }
     return true;
 
+  }
+
+  public boolean isIndexedFunctionCall() {
+    if (this.childExpressions.size() != 1) {
+      return false;
+    }
+    return this.childExpressions.get(0).isIndexedFunctionCall();
+  }
+
+  public long estimateIndexedFunction(OFromClause target, OCommandContext context, OBinaryCompareOperator operator, Object right) {
+    if (this.childExpressions.size() != 1) {
+      return -1;
+    }
+    return this.childExpressions.get(0).estimateIndexedFunction(target, context, operator, right);
+  }
+
+  public Iterable<OIdentifiable> executeIndexedFunction(OFromClause target, OCommandContext context,
+      OBinaryCompareOperator operator, Object right) {
+    if (this.childExpressions.size() != 1) {
+      return null;
+    }
+    return this.childExpressions.get(0).executeIndexedFunction(target, context, operator, right);
+  }
+
+  public boolean isBaseIdentifier() {
+    if (childExpressions.size() == 1) {
+      return childExpressions.get(0).isBaseIdentifier();
+    }
+    return false;
+  }
+
+  public boolean isEarlyCalculated() {
+    for (OMathExpression exp : childExpressions) {
+      if (!exp.isEarlyCalculated()) {
+        return false;
+      }
+    }
+    return true;
   }
 }
 /* JavaCC - OriginalChecksum=c255bea24e12493e1005ba2a4d1dbb9d (do not edit this line) */

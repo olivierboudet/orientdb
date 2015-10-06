@@ -23,6 +23,7 @@ import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IQueue;
 import com.hazelcast.spi.exception.DistributedObjectDestroyedException;
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.db.OScenarioThreadLocal;
@@ -30,8 +31,6 @@ import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.metadata.security.OSecurityUser;
 import com.orientechnologies.orient.core.metadata.security.OUser;
 import com.orientechnologies.orient.core.record.ORecord;
-import com.orientechnologies.orient.core.serialization.serializer.record.OSerializationSetThreadLocal;
-import com.orientechnologies.orient.server.config.OServerUserConfiguration;
 import com.orientechnologies.orient.server.distributed.ODiscardedResponse;
 import com.orientechnologies.orient.server.distributed.ODistributedException;
 import com.orientechnologies.orient.server.distributed.ODistributedRequest;
@@ -148,15 +147,14 @@ public class ODistributedWorker extends Thread {
   public void initDatabaseInstance() {
     if (database == null) {
       // OPEN IT
-      database = (ODatabaseDocumentTx) manager.getServerInstance().openDatabase("document", databaseName, "bypass", "bypass", null,
-          true);
+      database = (ODatabaseDocumentTx) manager.getServerInstance().openDatabase(databaseName, "internal", "internal", null, true);
 
       // AVOID RELOADING DB INFORMATION BECAUSE OF DEADLOCKS
       // database.reload();
 
     } else if (database.isClosed()) {
       // DATABASE CLOSED, REOPEN IT
-      manager.getServerInstance().openDatabase(database, "bypass", "bypass", null, true);
+      manager.getServerInstance().openDatabase(database, "internal", "internal", null, true);
 
       // AVOID RELOADING DB INFORMATION BECAUSE OF DEADLOCKS
       // database.reload();
@@ -346,16 +344,16 @@ public class ODistributedWorker extends Thread {
 
   /**
    * Checks if last pending operation must be re-executed or not. In some circustamces the exception
-   * OHotAlignmentNotPossibleExeption is raised because it's not possible to recover the database state.
+   * OHotAlignmentNotPossibleException is raised because it's not possible to recover the database state.
    *
-   * @throws OHotAlignmentNotPossibleExeption
+   * @throws OHotAlignmentNotPossibleException
    */
   protected void hotAlignmentError(final ODistributedRequest iLastPendingRequest, final String iMessage, final Object... iParams)
-      throws OHotAlignmentNotPossibleExeption {
+      throws OHotAlignmentNotPossibleException {
     final String msg = String.format(iMessage, iParams);
 
     ODistributedServerLog.warn(this, getLocalNodeName(), iLastPendingRequest.getSenderNodeName(), DIRECTION.IN, "- " + msg);
-    throw new OHotAlignmentNotPossibleExeption(msg);
+    throw new OHotAlignmentNotPossibleException(msg);
   }
 
   protected boolean checkIfOperationHasBeenExecuted(final ODistributedRequest lastPendingRequest, final OAbstractRemoteTask task) {
@@ -423,13 +421,8 @@ public class ODistributedWorker extends Thread {
         throw new ODistributedException("Timeout on dispatching response to the thread queue " + iRequest.getSenderNodeName());
 
     } catch (Exception e) {
-      throw new ODistributedException("Cannot dispatch response to the thread queue " + iRequest.getSenderNodeName(), e);
+      throw OException.wrapException(
+          new ODistributedException("Cannot dispatch response to the thread queue " + iRequest.getSenderNodeName()), e);
     }
-  }
-
-  private void createReplicatorUser(ODatabaseDocumentTx database, final OServerUserConfiguration replicatorUser) {
-    final OUser replUser = database.getMetadata().getSecurity().getUser(replicatorUser.name);
-    if (replUser == null)
-      database.getMetadata().getSecurity().createUser(replicatorUser.name, replicatorUser.password, "admin");
   }
 }

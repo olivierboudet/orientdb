@@ -20,10 +20,12 @@
 
 package com.orientechnologies.orient.core.db.record.ridbag.sbtree;
 
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.db.ODatabaseDocumentInternal;
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal;
 import com.orientechnologies.orient.core.db.record.OIdentifiable;
+import com.orientechnologies.orient.core.index.OIndexEngineException;
 import com.orientechnologies.orient.core.storage.cache.OReadCache;
 import com.orientechnologies.orient.core.index.sbtree.local.OSBTreeException;
 import com.orientechnologies.orient.core.storage.cache.OWriteCache;
@@ -79,8 +81,14 @@ public class OIndexRIDContainer implements Set<OIdentifiable> {
   private long resolveFileIdByName(String fileName) {
     final OAbstractPaginatedStorage storage = (OAbstractPaginatedStorage) ODatabaseRecordThreadLocal.INSTANCE.get().getStorage()
         .getUnderlying();
+    final OAtomicOperation atomicOperation;
     try {
-      final OAtomicOperation atomicOperation = storage.getAtomicOperationsManager().startAtomicOperation(fileName, true);
+      atomicOperation = storage.getAtomicOperationsManager().startAtomicOperation(fileName, true);
+    } catch (IOException e) {
+      throw OException.wrapException(new OIndexEngineException("Error creation of sbtree with name " + fileName, fileName), e);
+    }
+
+    try {
       final OReadCache readCache = storage.getReadCache();
       final OWriteCache writeCache = storage.getWriteCache();
 
@@ -104,10 +112,10 @@ public class OIndexRIDContainer implements Set<OIdentifiable> {
       try {
         storage.getAtomicOperationsManager().endAtomicOperation(true, e);
       } catch (IOException ioe) {
-        throw new OSBTreeException("Error of rollback of atomic operation", ioe);
+        throw OException.wrapException(new OIndexEngineException("Error of rollback of atomic operation", fileName), ioe);
       }
 
-      throw new OSBTreeException("Error creation of sbtree with name " + fileName, e);
+      throw OException.wrapException(new OIndexEngineException("Error creation of sbtree with name " + fileName, fileName), e);
     }
   }
 
