@@ -1199,7 +1199,6 @@ public class OConsoleDatabaseApp extends OrientConsole implements OCommandOutput
         } else {
           if (prop.value instanceof ORidBag) {
             message("\n  property value: ORidBug ");
-            ((ORidBag) prop.value).debugPrint(System.out);
           } else
             message("\n  property value: %s", prop.value != null ? prop.value.toString() : "null");
         }

@@ -62,15 +62,17 @@ import java.util.zip.ZipOutputStream;
  * @since 28.03.13
  */
 public class OLocalPaginatedStorage extends OAbstractPaginatedStorage implements OFreezableStorage {
-  private static String[]                  ALL_FILE_EXTENSIONS = { ".ocf", ".pls", ".pcl", ".oda", ".odh", ".otx", ".ocs", ".oef",
-      ".oem", ".oet", ODiskWriteAheadLog.WAL_SEGMENT_EXTENSION, ODiskWriteAheadLog.MASTER_RECORD_EXTENSION,
+  public static final int                  WAL_BACKUP_ITERATION_STEP = 2;
+
+  private static String[]                  ALL_FILE_EXTENSIONS       = { ".ocf", ".pls", ".pcl", ".oda", ".odh", ".otx", ".ocs",
+      ".oef", ".oem", ".oet", ODiskWriteAheadLog.WAL_SEGMENT_EXTENSION, ODiskWriteAheadLog.MASTER_RECORD_EXTENSION,
       OHashTableIndexEngine.BUCKET_FILE_EXTENSION, OHashTableIndexEngine.METADATA_FILE_EXTENSION,
       OHashTableIndexEngine.TREE_FILE_EXTENSION, OHashTableIndexEngine.NULL_BUCKET_FILE_EXTENSION,
       OClusterPositionMap.DEF_EXTENSION, OSBTreeIndexEngine.DATA_FILE_EXTENSION, OWOWCache.NAME_ID_MAP_EXTENSION,
       OIndexRIDContainer.INDEX_FILE_EXTENSION, OSBTreeCollectionManagerShared.DEFAULT_EXTENSION,
-      OSBTreeIndexEngine.NULL_BUCKET_FILE_EXTENSION           };
+      OSBTreeIndexEngine.NULL_BUCKET_FILE_EXTENSION                 };
 
-  private static final int                 ONE_KB              = 1024;
+  private static final int                 ONE_KB                    = 1024;
 
   private final int                        DELETE_MAX_RETRIES;
   private final int                        DELETE_WAIT_TIME;

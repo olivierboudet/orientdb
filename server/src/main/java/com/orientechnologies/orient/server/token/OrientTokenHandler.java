@@ -96,8 +96,7 @@ public class OrientTokenHandler extends OServerPluginAbstract implements OTokenH
     throw new UnsupportedOperationException();
   }
 
-  public byte[] getSignedBinaryToken(final ODatabaseDocumentInternal db, final OSecurityUser user,
-      final ONetworkProtocolData data) {
+  public byte[] getSignedBinaryToken(final ODatabaseDocumentInternal db, final OSecurityUser user, final ONetworkProtocolData data) {
     throw new UnsupportedOperationException();
   }
 

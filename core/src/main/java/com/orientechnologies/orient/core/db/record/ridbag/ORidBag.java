@@ -437,17 +437,6 @@ public class ORidBag implements OStringBuilderSerializable, Iterable<OIdentifiab
     delegate = treeBag;
   }
 
-  public void debugPrint(PrintStream writer) throws IOException {
-    if (delegate instanceof OSBTreeRidBag) {
-      writer.append("tree [\n");
-      ((OSBTreeRidBag) delegate).debugPrint(writer);
-      writer.append("]\n");
-    } else {
-      writer.append(delegate.toString());
-      writer.append("\n");
-    }
-  }
-
   protected ORidBagDelegate getDelegate() {
     return delegate;
   }

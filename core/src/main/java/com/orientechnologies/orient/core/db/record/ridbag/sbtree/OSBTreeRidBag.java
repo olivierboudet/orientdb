@@ -1099,12 +1099,4 @@ public class OSBTreeRidBag implements ORidBagDelegate {
 
     return null;
   }
-
-  public void debugPrint(PrintStream writer) throws IOException {
-    OSBTreeBonsai<OIdentifiable, Integer> tree = loadTree();
-    if (tree instanceof OSBTreeBonsaiLocal) {
-      ((OSBTreeBonsaiLocal) tree).debugPrintBucket(writer);
-    }
-  }
-
 }

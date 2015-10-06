@@ -1,6 +1,8 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal;
 
+import com.orientechnologies.common.directmemory.ODirectMemory;
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
+import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -15,7 +17,7 @@ public class OWALPageChangesCollectorTest {
 
   public void testSingleLongValueInStartChunk() {
     byte[] data = new byte[128];
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(data);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(data);
 
     OWALPageChangesCollector changesCollector = new OWALPageChangesCollector(128);
     changesCollector.setLongValue(pointer, 64, 42);
@@ -26,7 +28,7 @@ public class OWALPageChangesCollectorTest {
 
   public void testSingleLongValuesInMiddleOfChunk() {
     byte[] data = new byte[128];
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(data);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(data);
 
     OWALPageChangesCollector changesCollector = new OWALPageChangesCollector(128);
     changesCollector.setLongValue(pointer, 60, 42);
@@ -37,7 +39,7 @@ public class OWALPageChangesCollectorTest {
 
   public void testSingleIntValue() {
     byte[] data = new byte[128];
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(data);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(data);
 
     OWALPageChangesCollector changesCollector = new OWALPageChangesCollector(128);
     changesCollector.setIntValue(pointer, 64, 42);
@@ -48,7 +50,7 @@ public class OWALPageChangesCollectorTest {
 
   public void testSingleShortValue() {
     byte[] data = new byte[128];
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(data);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(data);
 
     OWALPageChangesCollector changesCollector = new OWALPageChangesCollector(128);
     changesCollector.setShortValue(pointer, 64, (short) 42);
@@ -59,7 +61,7 @@ public class OWALPageChangesCollectorTest {
 
   public void testSingleByteValue() {
     byte[] data = new byte[128];
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(data);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(data);
 
     OWALPageChangesCollector changesCollector = new OWALPageChangesCollector(128);
     changesCollector.setByteValue(pointer, 64, (byte) 42);
@@ -70,7 +72,7 @@ public class OWALPageChangesCollectorTest {
 
   public void testBinaryValueTwoChunksFromStart() {
     byte[] data = new byte[256];
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(data);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(data);
 
     OWALPageChangesCollector changesCollector = new OWALPageChangesCollector(256);
     byte[] changes = new byte[128];
@@ -87,7 +89,7 @@ public class OWALPageChangesCollectorTest {
 
   public void testBinaryValueTwoChunksInMiddle() {
     byte[] data = new byte[256];
-    ODirectMemoryPointer pointer = new ODirectMemoryPointer(data);
+    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(data);
 
     OWALPageChangesCollector changesCollector = new OWALPageChangesCollector(256);
     byte[] changes = new byte[128];
