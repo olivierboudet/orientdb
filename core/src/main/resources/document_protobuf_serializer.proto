@@ -2,6 +2,21 @@ syntax = "proto3";
 
 package com.orientechnologies.common.serialization.protobuf;
 
+message ClusterEntry {
+    oneof data {
+      bytes raw = 1;
+      EntryList positions = 2;
+    }
+
+    int64 version = 3;
+    int32 type = 4;
+}
+
+message EntryList {
+    repeated int64 positions = 1;
+}
+
+
 //ORecord instance
 message Record {
     oneof data {

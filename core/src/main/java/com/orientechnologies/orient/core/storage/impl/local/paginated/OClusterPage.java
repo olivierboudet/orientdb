@@ -73,12 +73,19 @@ public class OClusterPage extends ODurablePage {
   }
 
   public int appendRecord(final int recordVersion, final byte[] record) throws IOException {
+    return appendRecord(recordVersion, record, 0, 0, record.length);
+  }
+
+  public int appendRecord(final int recordVersion, final byte[] record, int recordOffset, int valueOffset, int size)
+      throws IOException {
+    assert recordOffset + record.length - valueOffset <= size;
+
     int freePosition = getIntValue(FREE_POSITION_OFFSET);
     final int indexesLength = getIntValue(PAGE_INDEXES_LENGTH_OFFSET);
 
     final int lastEntryIndexPosition = PAGE_INDEXES_OFFSET + indexesLength * INDEX_ITEM_SIZE;
 
-    int entrySize = record.length + 3 * OIntegerSerializer.INT_SIZE;
+    int entrySize = size + 3 * OIntegerSerializer.INT_SIZE;
     int freeListHeader = getIntValue(FREELIST_HEADER_OFFSET);
 
     if (!checkSpace(entrySize, freeListHeader))
@@ -132,10 +139,10 @@ public class OClusterPage extends ODurablePage {
     setIntValue(entryPosition, entryIndex);
     entryPosition += OIntegerSerializer.INT_SIZE;
 
-    setIntValue(entryPosition, record.length);
+    setIntValue(entryPosition, size);
     entryPosition += OIntegerSerializer.INT_SIZE;
 
-    setBinaryValue(entryPosition, record);
+    setBinaryValue(entryPosition + recordOffset, record, valueOffset, size);
 
     setIntValue(FREE_POSITION_OFFSET, freePosition);
 
@@ -349,6 +356,23 @@ public class OClusterPage extends ODurablePage {
     }
   }
 
+  public void setRecordByteValue(int recordPosition, int offset, byte value) throws IOException {
+    assert isPositionInsideInterval(recordPosition);
+
+    final int entryIndexPosition = PAGE_INDEXES_OFFSET + recordPosition * INDEX_ITEM_SIZE;
+    final int entryPointer = getIntValue(entryIndexPosition);
+    final int entryPosition = entryPointer & POSITION_MASK;
+
+    if (offset >= 0) {
+      assert insideRecordBounds(entryPosition, offset, OLongSerializer.LONG_SIZE);
+      setByteValue(entryPosition + offset + 3 * OIntegerSerializer.INT_SIZE, value);
+    } else {
+      final int recordSize = getIntValue(entryPosition + 2 * OIntegerSerializer.INT_SIZE);
+      assert insideRecordBounds(entryPosition, recordSize + offset, OLongSerializer.LONG_SIZE);
+      setByteValue(entryPosition + 3 * OIntegerSerializer.INT_SIZE + recordSize + offset, value);
+    }
+  }
+
   public long getRecordLongValue(int recordPosition, int offset) {
     assert isPositionInsideInterval(recordPosition);
 
@@ -364,6 +388,29 @@ public class OClusterPage extends ODurablePage {
       assert insideRecordBounds(entryPosition, recordSize + offset, OLongSerializer.LONG_SIZE);
       return getLongValue(entryPosition + 3 * OIntegerSerializer.INT_SIZE + recordSize + offset);
     }
+  }
+
+  public byte[] getRecord(int recordPosition) {
+    final int entryIndexPosition = PAGE_INDEXES_OFFSET + INDEX_ITEM_SIZE * recordPosition;
+    final int entryPointer = getIntValue(entryIndexPosition);
+    final int entryPosition = entryPointer & POSITION_MASK;
+    final int size = getIntValue(entryPosition + 2 * OIntegerSerializer.INT_SIZE);
+
+    return getBinaryValue(entryPosition + 3 * OIntegerSerializer.INT_SIZE, size);
+  }
+
+  public byte[] getRecordBinaryValue(int recordPosition, int offset) throws IOException {
+    assert offset >= 0;
+    assert isPositionInsideInterval(recordPosition);
+
+    final int entryIndexPosition = PAGE_INDEXES_OFFSET + recordPosition * INDEX_ITEM_SIZE;
+    final int entryPointer = getIntValue(entryIndexPosition);
+    final int entryPosition = entryPointer & POSITION_MASK;
+    final int size = getIntValue(entryPosition + 2 * OIntegerSerializer.INT_SIZE) - offset;
+    assert size > 0;
+
+    assert insideRecordBounds(entryPosition, offset, size);
+    return getBinaryValue(entryPosition + offset + 3 * OIntegerSerializer.INT_SIZE, size);
   }
 
   public byte[] getRecordBinaryValue(int recordPosition, int offset, int size) throws IOException {

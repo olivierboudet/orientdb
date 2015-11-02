@@ -104,22 +104,6 @@ public class OProtobufDocumentBinarySerializerV0 implements ODocumentSerializer 
   }
 
   /**
-   * Look at http://www.eternallyconfuzzled.com/tuts/algorithms/jsw_tut_hashing.aspx
-   */
-  private static long fnvHashCode(String fieldName) {
-    long h = 2166136261L;
-
-    final char[] fieldChars = new char[fieldName.length()];
-    fieldName.getChars(0, fieldChars.length, fieldChars, 0);
-
-    for (int k = 0; k < fieldName.length(); k++) {
-      h = (h * 16777619) ^ fieldChars[k];
-    }
-
-    return h;
-  }
-
-  /**
    * <code>
    *  message Document {
    *    reserved 1;
@@ -475,7 +459,9 @@ public class OProtobufDocumentBinarySerializerV0 implements ODocumentSerializer 
         case 26: {
           final OTriple<String, OType, Object> fieldValue = readMapItem(bytesContainer, fieldsToInclude);
           if (fieldValue != null) {
-            ODocumentInternal.rawField(document, fieldValue.key, fieldValue.value.value, fieldValue.value.key);
+            if (!ODocumentInternal.rawContainsField(document, fieldValue.key)) {
+              ODocumentInternal.rawField(document, fieldValue.key, fieldValue.value.value, fieldValue.value.key);
+            }
             fieldsRead++;
           }
 
@@ -662,7 +648,7 @@ public class OProtobufDocumentBinarySerializerV0 implements ODocumentSerializer 
     }
 
     if (fieldNameLen >= 0 && itemValue != null) {
-      return new OTriple<String, OType, Object>(new String(bytesContainer.bytes, fieldNameStart, fieldNameLen, UTF8), itemValue.key,
+      return new OTriple<String, OType, Object>(new String(bytesContainer.bytes, fieldNameStart, fieldNameLen, UTF8).intern(), itemValue.key,
           itemValue.value);
     }
 

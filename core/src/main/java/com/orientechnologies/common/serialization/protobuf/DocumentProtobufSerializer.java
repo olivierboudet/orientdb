@@ -8,6 +8,1241 @@ public final class DocumentProtobufSerializer {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
+  public interface ClusterEntryOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:com.orientechnologies.common.serialization.protobuf.ClusterEntry)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>optional bytes raw = 1;</code>
+     */
+    com.google.protobuf.ByteString getRaw();
+
+    /**
+     * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+     */
+    com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList getPositions();
+    /**
+     * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+     */
+    com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryListOrBuilder getPositionsOrBuilder();
+
+    /**
+     * <code>optional int64 version = 3;</code>
+     */
+    long getVersion();
+
+    /**
+     * <code>optional int32 type = 4;</code>
+     */
+    int getType();
+
+    public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry.DataCase getDataCase();
+  }
+  /**
+   * Protobuf type {@code com.orientechnologies.common.serialization.protobuf.ClusterEntry}
+   */
+  public  static final class ClusterEntry extends
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:com.orientechnologies.common.serialization.protobuf.ClusterEntry)
+      ClusterEntryOrBuilder {
+    // Use ClusterEntry.newBuilder() to construct.
+    private ClusterEntry(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+    }
+    private ClusterEntry() {
+      version_ = 0L;
+      type_ = 0;
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return com.google.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
+    private ClusterEntry(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
+      int mutable_bitField0_ = 0;
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!input.skipField(tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              dataCase_ = 1;
+              data_ = input.readBytes();
+              break;
+            }
+            case 18: {
+              com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.Builder subBuilder = null;
+              if (dataCase_ == 2) {
+                subBuilder = ((com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_).toBuilder();
+              }
+              data_ =
+                  input.readMessage(com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.parser(), extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom((com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_);
+                data_ = subBuilder.buildPartial();
+              }
+              dataCase_ = 2;
+              break;
+            }
+            case 24: {
+
+              version_ = input.readInt64();
+              break;
+            }
+            case 32: {
+
+              type_ = input.readInt32();
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw new RuntimeException(e.setUnfinishedMessage(this));
+      } catch (java.io.IOException e) {
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
+      } finally {
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry.class, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry.Builder.class);
+    }
+
+    private int dataCase_ = 0;
+    private java.lang.Object data_;
+    public enum DataCase
+        implements com.google.protobuf.Internal.EnumLite {
+      RAW(1),
+      POSITIONS(2),
+      DATA_NOT_SET(0);
+      private int value = 0;
+      private DataCase(int value) {
+        this.value = value;
+      }
+      public static DataCase valueOf(int value) {
+        switch (value) {
+          case 1: return RAW;
+          case 2: return POSITIONS;
+          case 0: return DATA_NOT_SET;
+          default: throw new java.lang.IllegalArgumentException(
+            "Value is undefined for this oneof enum.");
+        }
+      }
+      public int getNumber() {
+        return this.value;
+      }
+    };
+
+    public DataCase
+    getDataCase() {
+      return DataCase.valueOf(
+          dataCase_);
+    }
+
+    public static final int RAW_FIELD_NUMBER = 1;
+    /**
+     * <code>optional bytes raw = 1;</code>
+     */
+    public com.google.protobuf.ByteString getRaw() {
+      if (dataCase_ == 1) {
+        return (com.google.protobuf.ByteString) data_;
+      }
+      return com.google.protobuf.ByteString.EMPTY;
+    }
+
+    public static final int POSITIONS_FIELD_NUMBER = 2;
+    /**
+     * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+     */
+    public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList getPositions() {
+      if (dataCase_ == 2) {
+         return (com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_;
+      }
+      return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.getDefaultInstance();
+    }
+    /**
+     * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+     */
+    public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryListOrBuilder getPositionsOrBuilder() {
+      if (dataCase_ == 2) {
+         return (com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_;
+      }
+      return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.getDefaultInstance();
+    }
+
+    public static final int VERSION_FIELD_NUMBER = 3;
+    private long version_;
+    /**
+     * <code>optional int64 version = 3;</code>
+     */
+    public long getVersion() {
+      return version_;
+    }
+
+    public static final int TYPE_FIELD_NUMBER = 4;
+    private int type_;
+    /**
+     * <code>optional int32 type = 4;</code>
+     */
+    public int getType() {
+      return type_;
+    }
+
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (dataCase_ == 1) {
+        output.writeBytes(
+            1, (com.google.protobuf.ByteString)((com.google.protobuf.ByteString) data_));
+      }
+      if (dataCase_ == 2) {
+        output.writeMessage(2, (com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_);
+      }
+      if (version_ != 0L) {
+        output.writeInt64(3, version_);
+      }
+      if (type_ != 0) {
+        output.writeInt32(4, type_);
+      }
+    }
+
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (dataCase_ == 1) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(
+              1, (com.google.protobuf.ByteString)((com.google.protobuf.ByteString) data_));
+      }
+      if (dataCase_ == 2) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(2, (com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_);
+      }
+      if (version_ != 0L) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(3, version_);
+      }
+      if (type_ != 0) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(4, type_);
+      }
+      memoizedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code com.orientechnologies.common.serialization.protobuf.ClusterEntry}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:com.orientechnologies.common.serialization.protobuf.ClusterEntry)
+        com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntryOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry.class, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry.Builder.class);
+      }
+
+      // Construct using com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      public Builder clear() {
+        super.clear();
+        version_ = 0L;
+
+        type_ = 0;
+
+        dataCase_ = 0;
+        data_ = null;
+        return this;
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_descriptor;
+      }
+
+      public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry getDefaultInstanceForType() {
+        return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry.getDefaultInstance();
+      }
+
+      public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry build() {
+        com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry buildPartial() {
+        com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry result = new com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry(this);
+        if (dataCase_ == 1) {
+          result.data_ = data_;
+        }
+        if (dataCase_ == 2) {
+          if (positionsBuilder_ == null) {
+            result.data_ = data_;
+          } else {
+            result.data_ = positionsBuilder_.build();
+          }
+        }
+        result.version_ = version_;
+        result.type_ = type_;
+        result.dataCase_ = dataCase_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry) {
+          return mergeFrom((com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry other) {
+        if (other == com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry.getDefaultInstance()) return this;
+        if (other.getVersion() != 0L) {
+          setVersion(other.getVersion());
+        }
+        if (other.getType() != 0) {
+          setType(other.getType());
+        }
+        switch (other.getDataCase()) {
+          case RAW: {
+            setRaw(other.getRaw());
+            break;
+          }
+          case POSITIONS: {
+            mergePositions(other.getPositions());
+            break;
+          }
+          case DATA_NOT_SET: {
+            break;
+          }
+        }
+        onChanged();
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int dataCase_ = 0;
+      private java.lang.Object data_;
+      public DataCase
+          getDataCase() {
+        return DataCase.valueOf(
+            dataCase_);
+      }
+
+      public Builder clearData() {
+        dataCase_ = 0;
+        data_ = null;
+        onChanged();
+        return this;
+      }
+
+
+      /**
+       * <code>optional bytes raw = 1;</code>
+       */
+      public com.google.protobuf.ByteString getRaw() {
+        if (dataCase_ == 1) {
+          return (com.google.protobuf.ByteString) data_;
+        }
+        return com.google.protobuf.ByteString.EMPTY;
+      }
+      /**
+       * <code>optional bytes raw = 1;</code>
+       */
+      public Builder setRaw(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  dataCase_ = 1;
+        data_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes raw = 1;</code>
+       */
+      public Builder clearRaw() {
+        if (dataCase_ == 1) {
+          dataCase_ = 0;
+          data_ = null;
+          onChanged();
+        }
+        return this;
+      }
+
+      private com.google.protobuf.SingleFieldBuilder<
+          com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.Builder, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryListOrBuilder> positionsBuilder_;
+      /**
+       * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+       */
+      public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList getPositions() {
+        if (positionsBuilder_ == null) {
+          if (dataCase_ == 2) {
+            return (com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_;
+          }
+          return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.getDefaultInstance();
+        } else {
+          if (dataCase_ == 2) {
+            return positionsBuilder_.getMessage();
+          }
+          return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.getDefaultInstance();
+        }
+      }
+      /**
+       * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+       */
+      public Builder setPositions(com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList value) {
+        if (positionsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          data_ = value;
+          onChanged();
+        } else {
+          positionsBuilder_.setMessage(value);
+        }
+        dataCase_ = 2;
+        return this;
+      }
+      /**
+       * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+       */
+      public Builder setPositions(
+          com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.Builder builderForValue) {
+        if (positionsBuilder_ == null) {
+          data_ = builderForValue.build();
+          onChanged();
+        } else {
+          positionsBuilder_.setMessage(builderForValue.build());
+        }
+        dataCase_ = 2;
+        return this;
+      }
+      /**
+       * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+       */
+      public Builder mergePositions(com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList value) {
+        if (positionsBuilder_ == null) {
+          if (dataCase_ == 2 &&
+              data_ != com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.getDefaultInstance()) {
+            data_ = com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.newBuilder((com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_)
+                .mergeFrom(value).buildPartial();
+          } else {
+            data_ = value;
+          }
+          onChanged();
+        } else {
+          if (dataCase_ == 2) {
+            positionsBuilder_.mergeFrom(value);
+          }
+          positionsBuilder_.setMessage(value);
+        }
+        dataCase_ = 2;
+        return this;
+      }
+      /**
+       * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+       */
+      public Builder clearPositions() {
+        if (positionsBuilder_ == null) {
+          if (dataCase_ == 2) {
+            dataCase_ = 0;
+            data_ = null;
+            onChanged();
+          }
+        } else {
+          if (dataCase_ == 2) {
+            dataCase_ = 0;
+            data_ = null;
+          }
+          positionsBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+       */
+      public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.Builder getPositionsBuilder() {
+        return getPositionsFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+       */
+      public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryListOrBuilder getPositionsOrBuilder() {
+        if ((dataCase_ == 2) && (positionsBuilder_ != null)) {
+          return positionsBuilder_.getMessageOrBuilder();
+        } else {
+          if (dataCase_ == 2) {
+            return (com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_;
+          }
+          return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.getDefaultInstance();
+        }
+      }
+      /**
+       * <code>optional .com.orientechnologies.common.serialization.protobuf.EntryList positions = 2;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.Builder, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryListOrBuilder> 
+          getPositionsFieldBuilder() {
+        if (positionsBuilder_ == null) {
+          if (!(dataCase_ == 2)) {
+            data_ = com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.getDefaultInstance();
+          }
+          positionsBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.Builder, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryListOrBuilder>(
+                  (com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) data_,
+                  getParentForChildren(),
+                  isClean());
+          data_ = null;
+        }
+        dataCase_ = 2;
+        onChanged();;
+        return positionsBuilder_;
+      }
+
+      private long version_ ;
+      /**
+       * <code>optional int64 version = 3;</code>
+       */
+      public long getVersion() {
+        return version_;
+      }
+      /**
+       * <code>optional int64 version = 3;</code>
+       */
+      public Builder setVersion(long value) {
+        
+        version_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 version = 3;</code>
+       */
+      public Builder clearVersion() {
+        
+        version_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private int type_ ;
+      /**
+       * <code>optional int32 type = 4;</code>
+       */
+      public int getType() {
+        return type_;
+      }
+      /**
+       * <code>optional int32 type = 4;</code>
+       */
+      public Builder setType(int value) {
+        
+        type_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 type = 4;</code>
+       */
+      public Builder clearType() {
+        
+        type_ = 0;
+        onChanged();
+        return this;
+      }
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return this;
+      }
+
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return this;
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:com.orientechnologies.common.serialization.protobuf.ClusterEntry)
+    }
+
+    // @@protoc_insertion_point(class_scope:com.orientechnologies.common.serialization.protobuf.ClusterEntry)
+    private static final com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry();
+    }
+
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<ClusterEntry>
+        PARSER = new com.google.protobuf.AbstractParser<ClusterEntry>() {
+      public ClusterEntry parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new ClusterEntry(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    public static com.google.protobuf.Parser<ClusterEntry> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<ClusterEntry> getParserForType() {
+      return PARSER;
+    }
+
+    public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.ClusterEntry getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
+  public interface EntryListOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:com.orientechnologies.common.serialization.protobuf.EntryList)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>repeated int64 positions = 1;</code>
+     */
+    java.util.List<java.lang.Long> getPositionsList();
+    /**
+     * <code>repeated int64 positions = 1;</code>
+     */
+    int getPositionsCount();
+    /**
+     * <code>repeated int64 positions = 1;</code>
+     */
+    long getPositions(int index);
+  }
+  /**
+   * Protobuf type {@code com.orientechnologies.common.serialization.protobuf.EntryList}
+   */
+  public  static final class EntryList extends
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:com.orientechnologies.common.serialization.protobuf.EntryList)
+      EntryListOrBuilder {
+    // Use EntryList.newBuilder() to construct.
+    private EntryList(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+    }
+    private EntryList() {
+      positions_ = java.util.Collections.emptyList();
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return com.google.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
+    private EntryList(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
+      int mutable_bitField0_ = 0;
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!input.skipField(tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+                positions_ = new java.util.ArrayList<java.lang.Long>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              positions_.add(input.readInt64());
+              break;
+            }
+            case 10: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001) && input.getBytesUntilLimit() > 0) {
+                positions_ = new java.util.ArrayList<java.lang.Long>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                positions_.add(input.readInt64());
+              }
+              input.popLimit(limit);
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw new RuntimeException(e.setUnfinishedMessage(this));
+      } catch (java.io.IOException e) {
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
+      } finally {
+        if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+          positions_ = java.util.Collections.unmodifiableList(positions_);
+        }
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.class, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.Builder.class);
+    }
+
+    public static final int POSITIONS_FIELD_NUMBER = 1;
+    private java.util.List<java.lang.Long> positions_;
+    /**
+     * <code>repeated int64 positions = 1;</code>
+     */
+    public java.util.List<java.lang.Long>
+        getPositionsList() {
+      return positions_;
+    }
+    /**
+     * <code>repeated int64 positions = 1;</code>
+     */
+    public int getPositionsCount() {
+      return positions_.size();
+    }
+    /**
+     * <code>repeated int64 positions = 1;</code>
+     */
+    public long getPositions(int index) {
+      return positions_.get(index);
+    }
+    private int positionsMemoizedSerializedSize = -1;
+
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (getPositionsList().size() > 0) {
+        output.writeRawVarint32(10);
+        output.writeRawVarint32(positionsMemoizedSerializedSize);
+      }
+      for (int i = 0; i < positions_.size(); i++) {
+        output.writeInt64NoTag(positions_.get(i));
+      }
+    }
+
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      {
+        int dataSize = 0;
+        for (int i = 0; i < positions_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeInt64SizeNoTag(positions_.get(i));
+        }
+        size += dataSize;
+        if (!getPositionsList().isEmpty()) {
+          size += 1;
+          size += com.google.protobuf.CodedOutputStream
+              .computeInt32SizeNoTag(dataSize);
+        }
+        positionsMemoizedSerializedSize = dataSize;
+      }
+      memoizedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code com.orientechnologies.common.serialization.protobuf.EntryList}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:com.orientechnologies.common.serialization.protobuf.EntryList)
+        com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryListOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.class, com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.Builder.class);
+      }
+
+      // Construct using com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      public Builder clear() {
+        super.clear();
+        positions_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_descriptor;
+      }
+
+      public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList getDefaultInstanceForType() {
+        return com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.getDefaultInstance();
+      }
+
+      public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList build() {
+        com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList buildPartial() {
+        com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList result = new com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList(this);
+        int from_bitField0_ = bitField0_;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          positions_ = java.util.Collections.unmodifiableList(positions_);
+          bitField0_ = (bitField0_ & ~0x00000001);
+        }
+        result.positions_ = positions_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) {
+          return mergeFrom((com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList other) {
+        if (other == com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList.getDefaultInstance()) return this;
+        if (!other.positions_.isEmpty()) {
+          if (positions_.isEmpty()) {
+            positions_ = other.positions_;
+            bitField0_ = (bitField0_ & ~0x00000001);
+          } else {
+            ensurePositionsIsMutable();
+            positions_.addAll(other.positions_);
+          }
+          onChanged();
+        }
+        onChanged();
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private java.util.List<java.lang.Long> positions_ = java.util.Collections.emptyList();
+      private void ensurePositionsIsMutable() {
+        if (!((bitField0_ & 0x00000001) == 0x00000001)) {
+          positions_ = new java.util.ArrayList<java.lang.Long>(positions_);
+          bitField0_ |= 0x00000001;
+         }
+      }
+      /**
+       * <code>repeated int64 positions = 1;</code>
+       */
+      public java.util.List<java.lang.Long>
+          getPositionsList() {
+        return java.util.Collections.unmodifiableList(positions_);
+      }
+      /**
+       * <code>repeated int64 positions = 1;</code>
+       */
+      public int getPositionsCount() {
+        return positions_.size();
+      }
+      /**
+       * <code>repeated int64 positions = 1;</code>
+       */
+      public long getPositions(int index) {
+        return positions_.get(index);
+      }
+      /**
+       * <code>repeated int64 positions = 1;</code>
+       */
+      public Builder setPositions(
+          int index, long value) {
+        ensurePositionsIsMutable();
+        positions_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated int64 positions = 1;</code>
+       */
+      public Builder addPositions(long value) {
+        ensurePositionsIsMutable();
+        positions_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated int64 positions = 1;</code>
+       */
+      public Builder addAllPositions(
+          java.lang.Iterable<? extends java.lang.Long> values) {
+        ensurePositionsIsMutable();
+        com.google.protobuf.AbstractMessageLite.Builder.addAll(
+            values, positions_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated int64 positions = 1;</code>
+       */
+      public Builder clearPositions() {
+        positions_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);
+        onChanged();
+        return this;
+      }
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return this;
+      }
+
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return this;
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:com.orientechnologies.common.serialization.protobuf.EntryList)
+    }
+
+    // @@protoc_insertion_point(class_scope:com.orientechnologies.common.serialization.protobuf.EntryList)
+    private static final com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList();
+    }
+
+    public static com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<EntryList>
+        PARSER = new com.google.protobuf.AbstractParser<EntryList>() {
+      public EntryList parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new EntryList(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    public static com.google.protobuf.Parser<EntryList> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<EntryList> getParserForType() {
+      return PARSER;
+    }
+
+    public com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer.EntryList getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   public interface RecordOrBuilder extends
       // @@protoc_insertion_point(interface_extends:com.orientechnologies.common.serialization.protobuf.Record)
       com.google.protobuf.MessageOrBuilder {
@@ -10793,6 +12028,16 @@ public final class DocumentProtobufSerializer {
   }
 
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_com_orientechnologies_common_serialization_protobuf_Record_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -10883,69 +12128,74 @@ public final class DocumentProtobufSerializer {
     java.lang.String[] descriptorData = {
       "\n\"document_protobuf_serializer.proto\0223co" +
       "m.orientechnologies.common.serialization" +
-      ".protobuf\"\312\001\n\006Record\022\r\n\003raw\030\001 \001(\014H\000\022Q\n\010d" +
-      "ocument\030\002 \001(\0132=.com.orientechnologies.co" +
-      "mmon.serialization.protobuf.DocumentH\000\022E" +
-      "\n\003rid\030\003 \001(\01328.com.orientechnologies.comm" +
-      "on.serialization.protobuf.RID\022\017\n\007version" +
-      "\030\004 \001(\003B\006\n\004data\"\344\001\n\010Document\022\r\n\005class\030\002 \001" +
-      "(\t\022Y\n\006fields\030\003 \003(\0132I.com.orientechnologi" +
-      "es.common.serialization.protobuf.Documen",
-      "t.FieldsEntry\032h\n\013FieldsEntry\022\013\n\003key\030\001 \001(" +
-      "\t\022H\n\005value\030\002 \001(\01329.com.orientechnologies" +
-      ".common.serialization.protobuf.Item:\0028\001J" +
-      "\004\010\001\020\002\"\210\t\n\004Item\022\021\n\007val_int\030\001 \001(\021H\000\022\024\n\nval" +
-      "_double\030\002 \001(\001H\000\022\024\n\nval_string\030\003 \001(\tH\000\022\022\n" +
-      "\010val_long\030\004 \001(\022H\000\022T\n\014val_link_set\030\005 \001(\0132" +
-      "<.com.orientechnologies.common.serializa" +
-      "tion.protobuf.LinkSetH\000\022L\n\010val_link\030\006 \001(" +
-      "\01328.com.orientechnologies.common.seriali" +
-      "zation.protobuf.RIDH\000\022M\n\010val_date\030\007 \001(\0132",
-      "9.com.orientechnologies.common.serializa" +
-      "tion.protobuf.DateH\000\022V\n\rval_date_time\030\010 " +
-      "\001(\0132=.com.orientechnologies.common.seria" +
-      "lization.protobuf.DateTimeH\000\022Q\n\nval_reco" +
-      "rd\030\n \001(\0132;.com.orientechnologies.common." +
-      "serialization.protobuf.RecordH\000\022T\n\017val_e" +
-      "mbded_list\030\013 \001(\01329.com.orientechnologies" +
-      ".common.serialization.protobuf.ListH\000\022V\n" +
-      "\rval_link_list\030\014 \001(\0132=.com.orientechnolo" +
-      "gies.common.serialization.protobuf.LinkL",
-      "istH\000\022T\n\020val_embedded_set\030\r \001(\01328.com.or" +
-      "ientechnologies.common.serialization.pro" +
-      "tobuf.SetH\000\022T\n\020val_embedded_map\030\016 \001(\01328." +
-      "com.orientechnologies.common.serializati" +
-      "on.protobuf.MapH\000\022T\n\014val_link_map\030\017 \001(\0132" +
-      "<.com.orientechnologies.common.serializa" +
-      "tion.protobuf.LinkMapH\000\022\022\n\010val_byte\030\020 \001(" +
-      "\014H\000\022\023\n\tval_bytes\030\021 \001(\014H\000\022\024\n\nval_custom\030\022" +
-      " \001(\014H\000\022S\n\013val_decimal\030\023 \001(\0132<.com.orient" +
-      "echnologies.common.serialization.protobu",
-      "f.DecimalH\000\022\023\n\tval_short\030\024 \001(\021H\000\022\023\n\tval_" +
-      "float\030\025 \001(\002H\000\022\022\n\010val_bool\030\026 \001(\010H\000B\007\n\005val" +
-      "ueJ\004\010\t\020\n\"Q\n\004List\022I\n\006values\030\001 \003(\01329.com.o" +
-      "rientechnologies.common.serialization.pr" +
-      "otobuf.Item\"T\n\010LinkList\022H\n\006values\030\001 \003(\0132" +
+      ".protobuf\"\231\001\n\014ClusterEntry\022\r\n\003raw\030\001 \001(\014H" +
+      "\000\022S\n\tpositions\030\002 \001(\0132>.com.orientechnolo" +
+      "gies.common.serialization.protobuf.Entry" +
+      "ListH\000\022\017\n\007version\030\003 \001(\003\022\014\n\004type\030\004 \001(\005B\006\n" +
+      "\004data\"\036\n\tEntryList\022\021\n\tpositions\030\001 \003(\003\"\312\001" +
+      "\n\006Record\022\r\n\003raw\030\001 \001(\014H\000\022Q\n\010document\030\002 \001(" +
+      "\0132=.com.orientechnologies.common.seriali" +
+      "zation.protobuf.DocumentH\000\022E\n\003rid\030\003 \001(\0132",
       "8.com.orientechnologies.common.serializa" +
-      "tion.protobuf.RID\"P\n\003Set\022I\n\006values\030\001 \003(\013" +
-      "29.com.orientechnologies.common.serializ" +
-      "ation.protobuf.Item\"S\n\007LinkSet\022H\n\006values" +
-      "\030\001 \003(\01328.com.orientechnologies.common.se",
-      "rialization.protobuf.RID\"\305\001\n\003Map\022T\n\006valu" +
-      "es\030\001 \003(\0132D.com.orientechnologies.common." +
-      "serialization.protobuf.Map.ValuesEntry\032h" +
-      "\n\013ValuesEntry\022\013\n\003key\030\001 \001(\t\022H\n\005value\030\002 \001(" +
-      "\01329.com.orientechnologies.common.seriali" +
-      "zation.protobuf.Item:\0028\001\"\314\001\n\007LinkMap\022X\n\006" +
-      "values\030\001 \003(\0132H.com.orientechnologies.com" +
-      "mon.serialization.protobuf.LinkMap.Value" +
-      "sEntry\032g\n\013ValuesEntry\022\013\n\003key\030\001 \001(\t\022G\n\005va" +
-      "lue\030\002 \001(\01328.com.orientechnologies.common",
-      ".serialization.protobuf.RID:\0028\001\".\n\003RID\022\022" +
-      "\n\ncluster_id\030\001 \001(\021\022\023\n\013cluster_pos\030\002 \001(\022\"" +
-      "\031\n\010DateTime\022\r\n\005value\030\001 \001(\003\"\025\n\004Date\022\r\n\005va" +
-      "lue\030\001 \001(\003\"\'\n\007Decimal\022\r\n\005scale\030\001 \001(\003\022\r\n\005v" +
-      "alue\030\002 \001(\014b\006proto3"
+      "tion.protobuf.RID\022\017\n\007version\030\004 \001(\003B\006\n\004da" +
+      "ta\"\344\001\n\010Document\022\r\n\005class\030\002 \001(\t\022Y\n\006fields" +
+      "\030\003 \003(\0132I.com.orientechnologies.common.se" +
+      "rialization.protobuf.Document.FieldsEntr" +
+      "y\032h\n\013FieldsEntry\022\013\n\003key\030\001 \001(\t\022H\n\005value\030\002" +
+      " \001(\01329.com.orientechnologies.common.seri" +
+      "alization.protobuf.Item:\0028\001J\004\010\001\020\002\"\210\t\n\004It" +
+      "em\022\021\n\007val_int\030\001 \001(\021H\000\022\024\n\nval_double\030\002 \001(" +
+      "\001H\000\022\024\n\nval_string\030\003 \001(\tH\000\022\022\n\010val_long\030\004 ",
+      "\001(\022H\000\022T\n\014val_link_set\030\005 \001(\0132<.com.orient" +
+      "echnologies.common.serialization.protobu" +
+      "f.LinkSetH\000\022L\n\010val_link\030\006 \001(\01328.com.orie" +
+      "ntechnologies.common.serialization.proto" +
+      "buf.RIDH\000\022M\n\010val_date\030\007 \001(\01329.com.orient" +
+      "echnologies.common.serialization.protobu" +
+      "f.DateH\000\022V\n\rval_date_time\030\010 \001(\0132=.com.or" +
+      "ientechnologies.common.serialization.pro" +
+      "tobuf.DateTimeH\000\022Q\n\nval_record\030\n \001(\0132;.c" +
+      "om.orientechnologies.common.serializatio",
+      "n.protobuf.RecordH\000\022T\n\017val_embded_list\030\013" +
+      " \001(\01329.com.orientechnologies.common.seri" +
+      "alization.protobuf.ListH\000\022V\n\rval_link_li" +
+      "st\030\014 \001(\0132=.com.orientechnologies.common." +
+      "serialization.protobuf.LinkListH\000\022T\n\020val" +
+      "_embedded_set\030\r \001(\01328.com.orientechnolog" +
+      "ies.common.serialization.protobuf.SetH\000\022" +
+      "T\n\020val_embedded_map\030\016 \001(\01328.com.orientec" +
+      "hnologies.common.serialization.protobuf." +
+      "MapH\000\022T\n\014val_link_map\030\017 \001(\0132<.com.orient",
+      "echnologies.common.serialization.protobu" +
+      "f.LinkMapH\000\022\022\n\010val_byte\030\020 \001(\014H\000\022\023\n\tval_b" +
+      "ytes\030\021 \001(\014H\000\022\024\n\nval_custom\030\022 \001(\014H\000\022S\n\013va" +
+      "l_decimal\030\023 \001(\0132<.com.orientechnologies." +
+      "common.serialization.protobuf.DecimalH\000\022" +
+      "\023\n\tval_short\030\024 \001(\021H\000\022\023\n\tval_float\030\025 \001(\002H" +
+      "\000\022\022\n\010val_bool\030\026 \001(\010H\000B\007\n\005valueJ\004\010\t\020\n\"Q\n\004" +
+      "List\022I\n\006values\030\001 \003(\01329.com.orientechnolo" +
+      "gies.common.serialization.protobuf.Item\"" +
+      "T\n\010LinkList\022H\n\006values\030\001 \003(\01328.com.orient",
+      "echnologies.common.serialization.protobu" +
+      "f.RID\"P\n\003Set\022I\n\006values\030\001 \003(\01329.com.orien" +
+      "technologies.common.serialization.protob" +
+      "uf.Item\"S\n\007LinkSet\022H\n\006values\030\001 \003(\01328.com" +
+      ".orientechnologies.common.serialization." +
+      "protobuf.RID\"\305\001\n\003Map\022T\n\006values\030\001 \003(\0132D.c" +
+      "om.orientechnologies.common.serializatio" +
+      "n.protobuf.Map.ValuesEntry\032h\n\013ValuesEntr" +
+      "y\022\013\n\003key\030\001 \001(\t\022H\n\005value\030\002 \001(\01329.com.orie" +
+      "ntechnologies.common.serialization.proto",
+      "buf.Item:\0028\001\"\314\001\n\007LinkMap\022X\n\006values\030\001 \003(\013" +
+      "2H.com.orientechnologies.common.serializ" +
+      "ation.protobuf.LinkMap.ValuesEntry\032g\n\013Va" +
+      "luesEntry\022\013\n\003key\030\001 \001(\t\022G\n\005value\030\002 \001(\01328." +
+      "com.orientechnologies.common.serializati" +
+      "on.protobuf.RID:\0028\001\".\n\003RID\022\022\n\ncluster_id" +
+      "\030\001 \001(\021\022\023\n\013cluster_pos\030\002 \001(\022\"\031\n\010DateTime\022" +
+      "\r\n\005value\030\001 \001(\003\"\025\n\004Date\022\r\n\005value\030\001 \001(\003\"\'\n" +
+      "\007Decimal\022\r\n\005scale\030\001 \001(\003\022\r\n\005value\030\002 \001(\014b\006" +
+      "proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -10959,14 +12209,26 @@ public final class DocumentProtobufSerializer {
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
-    internal_static_com_orientechnologies_common_serialization_protobuf_Record_descriptor =
+    internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_descriptor =
       getDescriptor().getMessageTypes().get(0);
+    internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_com_orientechnologies_common_serialization_protobuf_ClusterEntry_descriptor,
+        new java.lang.String[] { "Raw", "Positions", "Version", "Type", "Data", });
+    internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_com_orientechnologies_common_serialization_protobuf_EntryList_descriptor,
+        new java.lang.String[] { "Positions", });
+    internal_static_com_orientechnologies_common_serialization_protobuf_Record_descriptor =
+      getDescriptor().getMessageTypes().get(2);
     internal_static_com_orientechnologies_common_serialization_protobuf_Record_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_Record_descriptor,
         new java.lang.String[] { "Raw", "Document", "Rid", "Version", "Data", });
     internal_static_com_orientechnologies_common_serialization_protobuf_Document_descriptor =
-      getDescriptor().getMessageTypes().get(1);
+      getDescriptor().getMessageTypes().get(3);
     internal_static_com_orientechnologies_common_serialization_protobuf_Document_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_Document_descriptor,
@@ -10978,37 +12240,37 @@ public final class DocumentProtobufSerializer {
         internal_static_com_orientechnologies_common_serialization_protobuf_Document_FieldsEntry_descriptor,
         new java.lang.String[] { "Key", "Value", });
     internal_static_com_orientechnologies_common_serialization_protobuf_Item_descriptor =
-      getDescriptor().getMessageTypes().get(2);
+      getDescriptor().getMessageTypes().get(4);
     internal_static_com_orientechnologies_common_serialization_protobuf_Item_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_Item_descriptor,
         new java.lang.String[] { "ValInt", "ValDouble", "ValString", "ValLong", "ValLinkSet", "ValLink", "ValDate", "ValDateTime", "ValRecord", "ValEmbdedList", "ValLinkList", "ValEmbeddedSet", "ValEmbeddedMap", "ValLinkMap", "ValByte", "ValBytes", "ValCustom", "ValDecimal", "ValShort", "ValFloat", "ValBool", "Value", });
     internal_static_com_orientechnologies_common_serialization_protobuf_List_descriptor =
-      getDescriptor().getMessageTypes().get(3);
+      getDescriptor().getMessageTypes().get(5);
     internal_static_com_orientechnologies_common_serialization_protobuf_List_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_List_descriptor,
         new java.lang.String[] { "Values", });
     internal_static_com_orientechnologies_common_serialization_protobuf_LinkList_descriptor =
-      getDescriptor().getMessageTypes().get(4);
+      getDescriptor().getMessageTypes().get(6);
     internal_static_com_orientechnologies_common_serialization_protobuf_LinkList_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_LinkList_descriptor,
         new java.lang.String[] { "Values", });
     internal_static_com_orientechnologies_common_serialization_protobuf_Set_descriptor =
-      getDescriptor().getMessageTypes().get(5);
+      getDescriptor().getMessageTypes().get(7);
     internal_static_com_orientechnologies_common_serialization_protobuf_Set_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_Set_descriptor,
         new java.lang.String[] { "Values", });
     internal_static_com_orientechnologies_common_serialization_protobuf_LinkSet_descriptor =
-      getDescriptor().getMessageTypes().get(6);
+      getDescriptor().getMessageTypes().get(8);
     internal_static_com_orientechnologies_common_serialization_protobuf_LinkSet_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_LinkSet_descriptor,
         new java.lang.String[] { "Values", });
     internal_static_com_orientechnologies_common_serialization_protobuf_Map_descriptor =
-      getDescriptor().getMessageTypes().get(7);
+      getDescriptor().getMessageTypes().get(9);
     internal_static_com_orientechnologies_common_serialization_protobuf_Map_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_Map_descriptor,
@@ -11020,7 +12282,7 @@ public final class DocumentProtobufSerializer {
         internal_static_com_orientechnologies_common_serialization_protobuf_Map_ValuesEntry_descriptor,
         new java.lang.String[] { "Key", "Value", });
     internal_static_com_orientechnologies_common_serialization_protobuf_LinkMap_descriptor =
-      getDescriptor().getMessageTypes().get(8);
+      getDescriptor().getMessageTypes().get(10);
     internal_static_com_orientechnologies_common_serialization_protobuf_LinkMap_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_LinkMap_descriptor,
@@ -11032,25 +12294,25 @@ public final class DocumentProtobufSerializer {
         internal_static_com_orientechnologies_common_serialization_protobuf_LinkMap_ValuesEntry_descriptor,
         new java.lang.String[] { "Key", "Value", });
     internal_static_com_orientechnologies_common_serialization_protobuf_RID_descriptor =
-      getDescriptor().getMessageTypes().get(9);
+      getDescriptor().getMessageTypes().get(11);
     internal_static_com_orientechnologies_common_serialization_protobuf_RID_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_RID_descriptor,
         new java.lang.String[] { "ClusterId", "ClusterPos", });
     internal_static_com_orientechnologies_common_serialization_protobuf_DateTime_descriptor =
-      getDescriptor().getMessageTypes().get(10);
+      getDescriptor().getMessageTypes().get(12);
     internal_static_com_orientechnologies_common_serialization_protobuf_DateTime_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_DateTime_descriptor,
         new java.lang.String[] { "Value", });
     internal_static_com_orientechnologies_common_serialization_protobuf_Date_descriptor =
-      getDescriptor().getMessageTypes().get(11);
+      getDescriptor().getMessageTypes().get(13);
     internal_static_com_orientechnologies_common_serialization_protobuf_Date_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_Date_descriptor,
         new java.lang.String[] { "Value", });
     internal_static_com_orientechnologies_common_serialization_protobuf_Decimal_descriptor =
-      getDescriptor().getMessageTypes().get(12);
+      getDescriptor().getMessageTypes().get(14);
     internal_static_com_orientechnologies_common_serialization_protobuf_Decimal_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_orientechnologies_common_serialization_protobuf_Decimal_descriptor,

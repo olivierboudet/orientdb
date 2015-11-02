@@ -34,6 +34,7 @@ import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSe
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Base page class for all durable data structures, that is data structures state of which can be consistently restored after system
@@ -57,18 +58,18 @@ import java.io.IOException;
  * @since 16.08.13
  */
 public class ODurablePage {
-  public static final int            PAGE_PADDING        = OWOWCache.PAGE_PADDING;
+  public static final int PAGE_PADDING = OWOWCache.PAGE_PADDING;
 
-  protected static final int         MAGIC_NUMBER_OFFSET = 0;
-  protected static final int         CRC32_OFFSET        = MAGIC_NUMBER_OFFSET + OLongSerializer.LONG_SIZE;
+  protected static final int MAGIC_NUMBER_OFFSET = 0;
+  protected static final int CRC32_OFFSET        = MAGIC_NUMBER_OFFSET + OLongSerializer.LONG_SIZE;
 
-  public static final int            WAL_SEGMENT_OFFSET  = CRC32_OFFSET + OIntegerSerializer.INT_SIZE;
-  public static final int            WAL_POSITION_OFFSET = WAL_SEGMENT_OFFSET + OLongSerializer.LONG_SIZE;
-  public static final int            MAX_PAGE_SIZE_BYTES = OGlobalConfiguration.DISK_CACHE_PAGE_SIZE.getValueAsInteger() * 1024;
+  public static final int WAL_SEGMENT_OFFSET  = CRC32_OFFSET + OIntegerSerializer.INT_SIZE;
+  public static final int WAL_POSITION_OFFSET = WAL_SEGMENT_OFFSET + OLongSerializer.LONG_SIZE;
+  public static final int MAX_PAGE_SIZE_BYTES = OGlobalConfiguration.DISK_CACHE_PAGE_SIZE.getValueAsInteger() * 1024;
 
-  protected static final int         NEXT_FREE_POSITION  = WAL_POSITION_OFFSET + OLongSerializer.LONG_SIZE;
+  protected static final int NEXT_FREE_POSITION = WAL_POSITION_OFFSET + OLongSerializer.LONG_SIZE;
 
-  protected OWALChangesTree          changesTree;
+  protected OWALChangesTree changesTree;
 
   private final OCacheEntry          cacheEntry;
   private final ODirectMemoryPointer pagePointer;
@@ -188,17 +189,21 @@ public class ODurablePage {
   }
 
   protected int setBinaryValue(int pageOffset, byte[] value) throws IOException {
-    if (value.length == 0)
+    return setBinaryValue(pageOffset, value, 0, value.length);
+  }
+
+  protected int setBinaryValue(int pageOffset, byte[] value, int offset, int size) throws IOException {
+    if (size == 0)
       return 0;
 
     if (changesTree != null) {
-      changesTree.add(value, pageOffset + PAGE_PADDING);
+      changesTree.add(Arrays.copyOfRange(value, offset, offset + size), pageOffset + PAGE_PADDING);
     } else
-      pagePointer.set(pageOffset + PAGE_PADDING, value, 0, value.length);
+      pagePointer.set(pageOffset + PAGE_PADDING, value, offset, size);
 
     cacheEntry.markDirty();
 
-    return value.length;
+    return size;
   }
 
   protected void moveData(int from, int to, int len) throws IOException {
