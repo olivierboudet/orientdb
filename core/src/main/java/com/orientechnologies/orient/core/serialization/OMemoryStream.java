@@ -98,9 +98,6 @@ public class OMemoryStream extends OutputStream {
     System.arraycopy(iSource.buffer, iSource.position, buffer, position, iSize);
   }
 
-  public final void writeTo(final OutputStream out) throws IOException {
-    out.write(buffer, 0, position);
-  }
 
   public final byte[] getInternalBuffer() {
     return buffer;
@@ -146,19 +143,19 @@ public class OMemoryStream extends OutputStream {
   }
 
   @Override
-  public final void write(final byte[] iBuffer, final int iOffset, final int iLength) {
+  public final void write(final byte[] buffer, final int offset, final int length) {
     final int pos = position;
-    final int tot = pos + iLength;
+    final int tot = pos + length;
 
-    assureSpaceFor(iLength);
+    assureSpaceFor(length);
 
-    final byte[] localBuffer = buffer;
+    final byte[] localBuffer = this.buffer;
 
-    if (iLength < NATIVE_COPY_THRESHOLD)
-      for (int i = 0; i < iLength; ++i)
-        localBuffer[pos + i] = iBuffer[iOffset + i];
+    if (length < NATIVE_COPY_THRESHOLD)
+      for (int i = 0; i < length; ++i)
+        localBuffer[pos + i] = buffer[offset + i];
     else
-      System.arraycopy(iBuffer, iOffset, localBuffer, pos, iLength);
+      System.arraycopy(buffer, offset, localBuffer, pos, length);
 
     position = tot;
   }

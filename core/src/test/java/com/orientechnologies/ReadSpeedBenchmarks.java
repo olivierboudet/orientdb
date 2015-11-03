@@ -1,6 +1,5 @@
 package com.orientechnologies;
 
-import com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery;
@@ -112,8 +111,8 @@ public class ReadSpeedBenchmarks {
       for (OPhysicalPosition positionsToProces : positionsToProcess) {
         ORawBuffer buffer = cluster.readRecord(positionsToProces.clusterPosition);
         long pos = singlePageCluster.createNewRecord(buffer.buffer, buffer.version, buffer.recordType);
-        byte[] rec = singlePageCluster.readNewRecord(pos);
-        assert Arrays.equals(rec, buffer.buffer);
+        ORawBuffer rec = singlePageCluster.readRecord(pos);
+        assert Arrays.equals(rec.buffer, buffer.buffer);
         records++;
       }
 
@@ -135,44 +134,41 @@ public class ReadSpeedBenchmarks {
     OSinglePageCluster singlePageCluster = new OSinglePageCluster(paginatedStorage, "profile");
     singlePageCluster.open();
 
-    // for (int n = 0; n < 100; n++) {
-    // long recordPosition = singlePageCluster.firstRecordPosition();
-    // if (recordPosition < 0)
-    // break;
-    //
-    // byte[] data = singlePageCluster.readNewRecord(recordPosition);
-    //
-    // OSinglePageCluster.RawRecord rawRecord = null;
-    // do {
-    // rawRecord = singlePageCluster.readNexRecord(recordPosition);
-    // if (rawRecord != null) {
-    // recordPosition = rawRecord.position;
-    // }
-    //
-    // } while (rawRecord != null);
-    // }
-    //
+    for (int n = 0; n < 100; n++) {
+      long recordPosition = singlePageCluster.firstRecordPosition();
+      if (recordPosition < 0)
+        break;
+
+      ORawBuffer data = singlePageCluster.readRecord(recordPosition);
+
+      OSinglePageCluster.RawRecord rawRecord = null;
+      do {
+        rawRecord = singlePageCluster.readNexRecord(recordPosition);
+        if (rawRecord != null) {
+          recordPosition = rawRecord.position;
+        }
+
+      } while (rawRecord != null);
+    }
+
     long start = System.nanoTime();
-    // for (int n = 0; n < 100; n++) {
-    long recordPosition = singlePageCluster.firstRecordPosition();
-    // if (recordPosition < 0)
-    // break;
+    for (int n = 0; n < 100; n++) {
+      long recordPosition = singlePageCluster.firstRecordPosition();
 
-    byte[] data = singlePageCluster.readNewRecord(recordPosition);
-    OSinglePageCluster.RawRecord rawRecord = null;
-    do {
-      rawRecord = singlePageCluster.readNexRecord(recordPosition);
-      if (rawRecord != null) {
-        recordPosition = rawRecord.position;
-      }
+      ORawBuffer data = singlePageCluster.readRecord(recordPosition);
+      OSinglePageCluster.RawRecord rawRecord;
+      do {
+        rawRecord = singlePageCluster.readNexRecord(recordPosition);
+        if (rawRecord != null) {
+          recordPosition = rawRecord.position;
+        }
 
-    } while (rawRecord != null);
+      } while (rawRecord != null);
 
-    // }
+    }
     long end = System.nanoTime();
 
-    System.out.println((15L * (end - start) / (1000000L)));
-
+    System.out.println((15L * (end - start) / (100 * 1000000L)));
     System.out.println("staff ----");
   }
 }

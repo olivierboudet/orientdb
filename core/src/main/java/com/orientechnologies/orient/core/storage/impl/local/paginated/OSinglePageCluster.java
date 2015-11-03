@@ -1,9 +1,9 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated;
 
-import com.google.protobuf.ByteString;
+import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.io.OFileUtils;
 import com.orientechnologies.common.log.OLogManager;
-import com.orientechnologies.common.serialization.protobuf.DocumentProtobufSerializer;
+import com.orientechnologies.common.serialization.types.OByteSerializer;
 import com.orientechnologies.orient.core.Orient;
 import com.orientechnologies.orient.core.compression.OCompression;
 import com.orientechnologies.orient.core.compression.OCompressionFactory;
@@ -15,18 +15,16 @@ import com.orientechnologies.orient.core.conflict.ORecordConflictStrategy;
 import com.orientechnologies.orient.core.encryption.OEncryption;
 import com.orientechnologies.orient.core.encryption.OEncryptionFactory;
 import com.orientechnologies.orient.core.exception.ORecordNotFoundException;
+import com.orientechnologies.orient.core.exception.OSinglePageClusterException;
 import com.orientechnologies.orient.core.serialization.serializer.record.binary.BytesContainer;
+import com.orientechnologies.orient.core.serialization.serializer.record.binary.OVarIntSerializer;
 import com.orientechnologies.orient.core.storage.*;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurableComponent;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static com.orientechnologies.orient.core.config.OGlobalConfiguration.DISK_CACHE_PAGE_SIZE;
 import static com.orientechnologies.orient.core.config.OGlobalConfiguration.PAGINATED_STORAGE_LOWEST_FREELIST_BOUNDARY;
@@ -40,7 +38,11 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
 
   private static final int PAGE_INDEX_OFFSET    = 16;
   private static final int RECORD_POSITION_MASK = 0xFFFF;
-  private static final int ONE_KB               = 1024;
+
+  private static final int ONE_KB                     = 1024;
+  public static final int  CLUSTER_ENTRY_TYPE         = 1;
+  public static final int  PART_OF_CLUSTER_ENTRY_TYPE = 3;
+  public static final int  CLUSTER_ENTRY_LIST_TYPE    = 2;
 
   private volatile OCompression                 compression;
   private volatile OEncryption                  encryption;
@@ -119,7 +121,8 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
       endAtomicOperation(false, null);
     } catch (Exception e) {
       endAtomicOperation(true, e);
-      throw new RuntimeException(e);
+      throw OException
+          .wrapException(new OSinglePageClusterException("Error during creation of cluster with name " + getName(), this), e);
     } finally {
       releaseExclusiveLock();
     }
@@ -206,82 +209,154 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
   }
 
   public long createNewRecord(byte[] content, int recordVersion, byte recordType) throws IOException {
-    final int maxContentSize = OClusterPage.MAX_RECORD_SIZE - 1;
+    final int maxContentSize = OSPCPage.MAX_RECORD_SIZE - 1;
     OAtomicOperation atomicOperation = startAtomicOperation();
     acquireExclusiveLock();
     try {
-      DocumentProtobufSerializer.ClusterEntry.Builder builder = DocumentProtobufSerializer.ClusterEntry.newBuilder();
-      builder.setType(recordType);
-      builder.setVersion(recordVersion);
-      builder.setRaw(ByteString.copyFrom(content));
+      final BytesContainer binaryEntry = serializeClusterEntry(content, recordVersion, recordType);
+      binaryEntry.offset = 0;
 
-      final ByteArrayOutputStream stream = new ByteArrayOutputStream();
-      DocumentProtobufSerializer.ClusterEntry entry = builder.build();
-      entry.writeTo(stream);
-
-      content = stream.toByteArray();
-
-      final int parts = (content.length + maxContentSize - 1) / maxContentSize;
+      final int parts = (binaryEntry.bytes.length + maxContentSize - 1) / maxContentSize;
 
       if (parts == 1) {
-        final long recordPosition = addSingleClusterPosition((byte) 1, content, recordVersion, atomicOperation);
+        final long recordPosition = addSingleRecord((byte) CLUSTER_ENTRY_TYPE, binaryEntry, binaryEntry.bytes.length, recordVersion,
+            atomicOperation);
         endAtomicOperation(false, null);
         return recordPosition;
       }
 
-      final List<Long> positions = new ArrayList<Long>();
+      long[] positions = new long[4];
+      int positionsSize = 0;
+
       for (int part = 0; part < parts; part++) {
         final int from = part * maxContentSize;
-        final int to = Math.min(from + maxContentSize, content.length);
-        positions.add(addSingleClusterPosition((byte) 0, Arrays.copyOfRange(content, from, to), recordVersion, atomicOperation));
+        final int to = Math.min(from + maxContentSize, binaryEntry.bytes.length);
+
+        if (positionsSize + 2 > positions.length) {
+          long[] newPositions = new long[positions.length << 1];
+          System.arraycopy(positions, 0, newPositions, 0, positions.length);
+          positions = newPositions;
+        }
+
+        binaryEntry.offset = from;
+        final long[] recordPositions = addSingleClusterEntryIndexPosition((byte) PART_OF_CLUSTER_ENTRY_TYPE, binaryEntry, to - from,
+            recordVersion, atomicOperation);
+
+        for (int i = 0; i < 2; i++) {
+          positions[positionsSize++] = recordPositions[i];
+        }
+
       }
+      final BytesContainer binaryEntryList = serializeEntryList(positions, recordVersion);
+      binaryEntryList.offset = 0;
 
-      final ByteArrayOutputStream entryStream = new ByteArrayOutputStream();
-      DocumentProtobufSerializer.ClusterEntry.Builder entryListBuilder = DocumentProtobufSerializer.ClusterEntry.newBuilder();
-      DocumentProtobufSerializer.EntryList.Builder listBuilder = DocumentProtobufSerializer.EntryList.newBuilder();
-      listBuilder.addAllPositions(positions);
-
-      entryListBuilder.setPositions(listBuilder);
-      entryListBuilder.setType(recordType);
-      entryListBuilder.setVersion(recordVersion);
-
-      DocumentProtobufSerializer.ClusterEntry entryList = entryListBuilder.build();
-      entryList.writeTo(entryStream);
-
-      final long recordPosition = addSingleClusterPosition((byte) 1, entryStream.toByteArray(), recordVersion, atomicOperation);
+      final long recordPosition = addSingleRecord((byte) CLUSTER_ENTRY_LIST_TYPE, binaryEntryList, binaryEntryList.bytes.length,
+          recordVersion, atomicOperation);
       endAtomicOperation(false, null);
 
       return recordPosition;
     } catch (RuntimeException e) {
       endAtomicOperation(true, e);
-      throw e;
+
+      throw OException.wrapException(new OSinglePageClusterException("Error during record creation", this), e);
     } finally {
       releaseExclusiveLock();
     }
   }
 
-  private long addSingleClusterPosition(byte recordType, byte[] data, int recordVersion, OAtomicOperation atomicOperation)
-      throws IOException {
-    final FindFreePageResult findFreePageResult = findFreePage(data.length, atomicOperation);
+  private BytesContainer serializeEntryList(long[] positions, int recordVersion) {
+
+    int contentSize = OVarIntSerializer.computeVarInt32Size(positions.length);
+
+    for (int i = 0; i < positions.length;) {
+      contentSize += OVarIntSerializer.computeVarInt64Size(positions[i++]);
+      contentSize += OVarIntSerializer.computeVarInt32Size((int) positions[i++]);
+    }
+
+    contentSize += OVarIntSerializer.computeVarInt32Size(recordVersion);
+
+    final byte[] content = new byte[contentSize];
+    final BytesContainer bytesContainer = new BytesContainer(content);
+    OVarIntSerializer.writeVarInt32(recordVersion, bytesContainer);
+
+    OVarIntSerializer.writeVarInt32(positions.length, bytesContainer);
+    for (int i = 0; i < positions.length;) {
+      OVarIntSerializer.writeVarInt64(positions[i++], bytesContainer);
+      OVarIntSerializer.writeVarInt32((int) positions[i++], bytesContainer);
+    }
+
+    return bytesContainer;
+  }
+
+  private long[] deserializeEntryList(BytesContainer bytesContainer) {
+    OVarIntSerializer.skipRawVarInt(bytesContainer);
+
+    final int positionsSize = OVarIntSerializer.readVarInt32(bytesContainer);
+
+    final long[] positions = new long[positionsSize];
+
+    for (int i = 0; i < positionsSize;) {
+      positions[i++] = OVarIntSerializer.readVarInt64(bytesContainer);
+      positions[i++] = OVarIntSerializer.readVarInt32(bytesContainer);
+    }
+
+    return positions;
+  }
+
+  private BytesContainer serializeClusterEntry(byte[] content, int recordVersion, byte recordType) {
+    final int contentLength = OVarIntSerializer.computeVarInt32Size(recordVersion) + content.length
+        + OVarIntSerializer.computeVarInt32Size(content.length) + OByteSerializer.BYTE_SIZE;
+
+    final byte[] result = new byte[contentLength];
+    final BytesContainer bytesContainer = new BytesContainer(result);
+
+    OVarIntSerializer.writeVarInt32(recordVersion, bytesContainer);
+
+    OVarIntSerializer.writeVarInt32(content.length, bytesContainer);
+    System.arraycopy(content, 0, bytesContainer.bytes, bytesContainer.offset, content.length);
+    bytesContainer.offset += content.length;
+
+    bytesContainer.bytes[bytesContainer.offset++] = recordType;
+
+    return bytesContainer;
+  }
+
+  private ORawBuffer deserializeClusterEntry(BytesContainer bytesContainer) {
+    final int recordVersion = OVarIntSerializer.readVarInt32(bytesContainer);
+
+    final int contentLength = OVarIntSerializer.readVarInt32(bytesContainer);
+    final byte[] content = new byte[contentLength];
+
+    System.arraycopy(bytesContainer.bytes, bytesContainer.offset, content, 0, contentLength);
+    bytesContainer.offset += contentLength;
+
+    final byte recordType = bytesContainer.bytes[bytesContainer.offset++];
+
+    return new ORawBuffer(content, recordVersion, recordType);
+  }
+
+  private long[] addSingleClusterEntryIndexPosition(byte recordType, BytesContainer data, int size, int recordVersion,
+      OAtomicOperation atomicOperation) throws IOException {
+    final FindFreePageResult findFreePageResult = findFreePage(size, atomicOperation);
 
     final int freePageIndex = findFreePageResult.freePageIndex;
     final long pageIndex = findFreePageResult.pageIndex;
 
     boolean newRecord = freePageIndex >= FREE_LIST_SIZE;
 
-    OCacheEntry cacheEntry = loadPage(atomicOperation, fileId, pageIndex, false);
-    if (cacheEntry == null)
+    final OCacheEntry cacheEntry;
+    if (newRecord) {
       cacheEntry = addPage(atomicOperation, fileId);
+    } else {
+      cacheEntry = loadPage(atomicOperation, fileId, pageIndex, false);
+    }
 
     final int position;
-
     cacheEntry.acquireExclusiveLock();
     try {
-      final OClusterPage localPage = new OClusterPage(cacheEntry, newRecord, getChangesTree(atomicOperation, cacheEntry));
+      final OSPCPage localPage = new OSPCPage(cacheEntry, newRecord, getChangesTree(atomicOperation, cacheEntry));
       assert newRecord || freePageIndex == calculateFreePageIndex(localPage);
-
-      position = localPage.appendRecord(recordVersion, data, 1, 0, data.length + 1);
-      localPage.setRecordByteValue(position, 0, recordType);
+      position = localPage.appendRecord(recordVersion, recordType, data, size);
 
       assert position >= 0;
     } finally {
@@ -291,7 +366,13 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
 
     updateFreePagesIndex(freePageIndex, pageIndex, atomicOperation);
 
-    return pageIndex << 16 | position;
+    return new long[] { pageIndex, position };
+  }
+
+  private long addSingleRecord(byte recordType, BytesContainer data, int size, int recordVersion, OAtomicOperation atomicOperation)
+      throws IOException {
+    final long[] recordPositions = addSingleClusterEntryIndexPosition(recordType, data, size, recordVersion, atomicOperation);
+    return recordPositions[0] << 16 | recordPositions[1];
   }
 
   public long firstRecordPosition() throws IOException {
@@ -304,8 +385,9 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
         final OCacheEntry cacheEntry = loadPage(atomicOperation, fileId, pageIndex, false, 0);
         cacheEntry.acquireSharedLock();
         try {
-          final OClusterPage localPage = new OClusterPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
-          final int firstRecord = localPage.findFirstRecord(0);
+          final OSPCPage localPage = new OSPCPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
+          final int firstRecord = localPage.findFirstRecord(0, new byte[] {CLUSTER_ENTRY_TYPE, CLUSTER_ENTRY_LIST_TYPE});
+
           if (firstRecord > -1)
             return pageIndex << 16 | firstRecord;
         } finally {
@@ -329,35 +411,30 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
       long pageIndex = (position >>> 16);
       int pagePosition = (int) (position & 0xFFFFL) + 1;
 
-      DocumentProtobufSerializer.EntryList entryList = null;
+      long[] entryList = null;
 
       int recordPosition = -1;
       long recordPageIndex = -1;
 
-      recordLoop: for (; pageIndex < filledUpTo; pageIndex++) {
+      for (; pageIndex < filledUpTo; pageIndex++) {
         final OCacheEntry cacheEntry = loadPage(atomicOperation, fileId, pageIndex, false, 0);
         cacheEntry.acquireSharedLock();
         try {
-          final OClusterPage localPage = new OClusterPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
+          final OSPCPage localPage = new OSPCPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
 
-          recordPosition = localPage.findFirstRecord(pagePosition);
-          while (recordPosition > -1) {
-            if (localPage.getRecordByteValue(recordPosition, 0) > 0) {
-              recordPageIndex = pageIndex;
+          recordPosition = localPage.findFirstRecord(pagePosition, new byte[] { CLUSTER_ENTRY_TYPE, CLUSTER_ENTRY_LIST_TYPE });
+          if (recordPosition >= 0) {
+            recordPageIndex = pageIndex;
 
-              byte[] binaryClusterEntry = localPage.getRecordBinaryValue(recordPosition, 1);
-              DocumentProtobufSerializer.ClusterEntry entry = DocumentProtobufSerializer.ClusterEntry.parseFrom(binaryClusterEntry);
+            final BytesContainer binaryClusterEntry = localPage.getRecordAndType(recordPosition);
+            binaryClusterEntry.offset = 1;
 
-              if (entry.getDataCase().equals(DocumentProtobufSerializer.ClusterEntry.DataCase.RAW)) {
-                return new RawRecord(entry.getRaw().toByteArray(), recordPageIndex << 16 | recordPosition);
-              } else
-                entryList = entry.getPositions();
+            if (binaryClusterEntry.bytes[0] == CLUSTER_ENTRY_TYPE) {
+              return new RawRecord(deserializeClusterEntry(binaryClusterEntry), recordPageIndex << 16 | recordPosition);
+            } else
+              entryList = deserializeEntryList(binaryClusterEntry);
 
-              break recordLoop;
-            } else {
-              pagePosition++;
-              recordPosition = localPage.findFirstRecord(pagePosition);
-            }
+            break;
           }
 
           pagePosition = 0;
@@ -377,10 +454,10 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
   }
 
   public static class RawRecord {
-    public final byte[] data;
-    public final long   position;
+    public final ORawBuffer data;
+    public final long       position;
 
-    public RawRecord(byte[] data, long position) {
+    public RawRecord(ORawBuffer data, long position) {
       this.data = data;
       this.position = position;
     }
@@ -412,7 +489,7 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
           OCacheEntry cacheEntry = loadPage(atomicOperation, fileId, pageIndex, false);
           int realFreePageIndex;
           try {
-            OClusterPage localPage = new OClusterPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
+            OSPCPage localPage = new OSPCPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
             realFreePageIndex = calculateFreePageIndex(localPage);
           } finally {
             releasePage(atomicOperation, cacheEntry);
@@ -435,7 +512,7 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
     }
   }
 
-  private int calculateFreePageIndex(OClusterPage localPage) {
+  private int calculateFreePageIndex(OSPCPage localPage) {
     int newFreePageIndex;
     if (localPage.isEmpty())
       newFreePageIndex = FREE_LIST_SIZE - 1;
@@ -452,7 +529,7 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
 
     cacheEntry.acquireExclusiveLock();
     try {
-      final OClusterPage localPage = new OClusterPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
+      final OSPCPage localPage = new OSPCPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
       int newFreePageIndex = calculateFreePageIndex(localPage);
 
       if (prevFreePageIndex == newFreePageIndex)
@@ -465,8 +542,7 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
         final OCacheEntry prevPageCacheEntry = loadPage(atomicOperation, fileId, prevPageIndex, false);
         prevPageCacheEntry.acquireExclusiveLock();
         try {
-          final OClusterPage prevPage = new OClusterPage(prevPageCacheEntry, false,
-              getChangesTree(atomicOperation, prevPageCacheEntry));
+          final OSPCPage prevPage = new OSPCPage(prevPageCacheEntry, false, getChangesTree(atomicOperation, prevPageCacheEntry));
           assert calculateFreePageIndex(prevPage) == prevFreePageIndex;
           prevPage.setNextPage(nextPageIndex);
         } finally {
@@ -479,8 +555,7 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
         final OCacheEntry nextPageCacheEntry = loadPage(atomicOperation, fileId, nextPageIndex, false);
         nextPageCacheEntry.acquireExclusiveLock();
         try {
-          final OClusterPage nextPage = new OClusterPage(nextPageCacheEntry, false,
-              getChangesTree(atomicOperation, nextPageCacheEntry));
+          final OSPCPage nextPage = new OSPCPage(nextPageCacheEntry, false, getChangesTree(atomicOperation, nextPageCacheEntry));
           if (calculateFreePageIndex(nextPage) != prevFreePageIndex)
             calculateFreePageIndex(nextPage);
 
@@ -519,7 +594,7 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
           final OCacheEntry oldFreePageCacheEntry = loadPage(atomicOperation, fileId, oldFreePage, false);
           oldFreePageCacheEntry.acquireExclusiveLock();
           try {
-            final OClusterPage oldFreeLocalPage = new OClusterPage(oldFreePageCacheEntry, false,
+            final OSPCPage oldFreeLocalPage = new OSPCPage(oldFreePageCacheEntry, false,
                 getChangesTree(atomicOperation, oldFreePageCacheEntry));
             assert calculateFreePageIndex(oldFreeLocalPage) == newFreePageIndex;
 
@@ -578,37 +653,31 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
   public void updateRecord(long clusterPosition, byte[] content, int recordVersion, byte recordType) throws IOException {
   }
 
-  public byte[] readNewRecord(long position) throws Exception {
-    acquireSharedLock();
-    try {
-      final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
-      final long filledUpTo = getFilledUpTo(atomicOperation, fileId);
+  private ORawBuffer doReadRecord(OAtomicOperation atomicOperation, long pageIndex, int pagePosition) throws IOException {
+    long[] entryList = null;
 
-      long pageIndex = (position >>> 16);
-      int pagePosition = (int) (position & 0xFFFFL);
-
-      if (pageIndex >= filledUpTo)
-        return null;
-
-      return doReadRecord(atomicOperation, pageIndex, pagePosition);
-    } finally {
-      releaseSharedLock();
-    }
-  }
-
-  private byte[] doReadRecord(OAtomicOperation atomicOperation, long pageIndex, int pagePosition) throws IOException {
-    DocumentProtobufSerializer.EntryList entryList = null;
     OCacheEntry cacheEntry = loadPage(atomicOperation, fileId, pageIndex, false, 0);
     cacheEntry.acquireSharedLock();
     try {
-      final OClusterPage localPage = new OClusterPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
-      byte[] binaryClusterEntry = localPage.getRecordBinaryValue(pagePosition, 1);
-      DocumentProtobufSerializer.ClusterEntry entry = DocumentProtobufSerializer.ClusterEntry.parseFrom(binaryClusterEntry);
+      final OSPCPage localPage = new OSPCPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
+      BytesContainer binaryClusterEntry = localPage.getRecordAndType(pagePosition);
+      binaryClusterEntry.offset = 1;
+      switch (binaryClusterEntry.bytes[0]) {
 
-      if (entry.getDataCase().equals(DocumentProtobufSerializer.ClusterEntry.DataCase.RAW)) {
-        return entry.getRaw().toByteArray();
-      } else
-        entryList = entry.getPositions();
+      case CLUSTER_ENTRY_TYPE: {
+        return deserializeClusterEntry(binaryClusterEntry);
+      }
+
+      case CLUSTER_ENTRY_LIST_TYPE: {
+        entryList = deserializeEntryList(binaryClusterEntry);
+        break;
+      }
+
+      default: {
+        throw new OSinglePageClusterException("Invalid record type " + binaryClusterEntry.bytes[0], this);
+      }
+      }
+
     } finally {
       cacheEntry.releaseSharedLock();
       releasePage(atomicOperation, cacheEntry);
@@ -617,21 +686,17 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
     return readRecordFromEntryList(atomicOperation, entryList);
   }
 
-  private byte[] readRecordFromEntryList(OAtomicOperation atomicOperation, DocumentProtobufSerializer.EntryList entryList)
-      throws IOException {
-    long pageIndex;
-    int pagePosition;
-    OCacheEntry cacheEntry;
-    BytesContainer bytesContainer = new BytesContainer(new byte[OClusterPage.MAX_RECORD_SIZE << 1]);
-    for (long entryPos : entryList.getPositionsList()) {
-      pageIndex = (entryPos >>> 16);
-      pagePosition = (int) (entryPos & 0xFFFFL);
+  private ORawBuffer readRecordFromEntryList(OAtomicOperation atomicOperation, long[] entryList) throws IOException {
+    BytesContainer bytesContainer = new BytesContainer(new byte[OSPCPage.MAX_RECORD_SIZE << 1]);
+    for (int i = 0; i < entryList.length;) {
+      final long pageIndex = entryList[i++];
+      final int recordPosition = (int) entryList[i++];
 
-      cacheEntry = loadPage(atomicOperation, fileId, pageIndex, false, 0);
+      OCacheEntry cacheEntry = loadPage(atomicOperation, fileId, pageIndex, false, 0);
       cacheEntry.acquireSharedLock();
       try {
-        final OClusterPage localPage = new OClusterPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
-        byte[] binaryClusterEntry = localPage.getRecordBinaryValue(pagePosition, 1);
+        final OSPCPage localPage = new OSPCPage(cacheEntry, false, getChangesTree(atomicOperation, cacheEntry));
+        byte[] binaryClusterEntry = localPage.getRecordBinaryValue(recordPosition, 1);
 
         final int offset = bytesContainer.alloc(binaryClusterEntry.length);
         System.arraycopy(binaryClusterEntry, 0, bytesContainer.bytes, offset, binaryClusterEntry.length);
@@ -641,14 +706,27 @@ public class OSinglePageCluster extends ODurableComponent implements OCluster {
       }
     }
 
-    DocumentProtobufSerializer.ClusterEntry entry = DocumentProtobufSerializer.ClusterEntry
-        .parseFrom(ByteString.copyFrom(bytesContainer.bytes, 0, bytesContainer.offset));
-    return entry.getRaw().toByteArray();
+    bytesContainer.offset = 0;
+    return deserializeClusterEntry(bytesContainer);
   }
 
   @Override
   public ORawBuffer readRecord(long clusterPosition) throws IOException {
-    return null;
+    acquireSharedLock();
+    try {
+      final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+      final long filledUpTo = getFilledUpTo(atomicOperation, fileId);
+
+      long pageIndex = (clusterPosition >>> 16);
+      int pagePosition = (int) (clusterPosition & 0xFFFFL);
+
+      if (pageIndex >= filledUpTo)
+        return null;
+
+      return doReadRecord(atomicOperation, pageIndex, pagePosition);
+    } finally {
+      releaseSharedLock();
+    }
   }
 
   @Override
