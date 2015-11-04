@@ -12,7 +12,7 @@
     ~ */ -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -42,7 +42,7 @@
             com.orientechnologies.orient.graph.*,
             com.tinkerpop.blueprints.impls.orient
         </osgi.export>
-        <blueprints.version>2.6.0</blueprints.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <argLine>-ea -Xmx3G -Xss2048k -Dindex.flushAfterCreate=false
             -Dstorage.makeFullCheckpointAfterCreate=false
@@ -77,13 +77,6 @@
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-core</artifactId>
             <version>${blueprints.version}</version>
@@ -93,6 +86,7 @@
             <artifactId>rexster-core</artifactId>
             <version>${blueprints.version}</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
@@ -104,11 +98,13 @@
             <groupId>com.tinkerpop.gremlin</groupId>
             <artifactId>gremlin-java</artifactId>
             <version>${blueprints.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop.gremlin</groupId>
             <artifactId>gremlin-groovy</artifactId>
             <version>${blueprints.version}</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
     <build>

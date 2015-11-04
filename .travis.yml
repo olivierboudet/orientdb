@@ -1,6 +1,9 @@
 sudo: false
 language: java
-install: travis_wait mvn install
+cache:
+  directories:
+  - $HOME/.m2
+install: travis_wait  mvn install
 branches:
   only:
   - develop
