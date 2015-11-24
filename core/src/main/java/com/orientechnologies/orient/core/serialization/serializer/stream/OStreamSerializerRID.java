@@ -28,6 +28,7 @@ import com.orientechnologies.orient.core.serialization.serializer.binary.impl.OL
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class OStreamSerializerRID implements OStreamSerializer, OBinarySerializer<OIdentifiable> {
   public static final String               NAME     = "p";
@@ -90,13 +91,23 @@ public class OStreamSerializerRID implements OStreamSerializer, OBinarySerialize
   }
 
   @Override
+  public void serializeInByteBuffer(OIdentifiable object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    OLinkSerializer.INSTANCE.serializeInByteBuffer(object, byteBuffer, offset);
+  }
+
+  @Override
   public OIdentifiable deserializeFromDirectMemoryObject(ODirectMemoryPointer pointer, long offset) {
     return OLinkSerializer.INSTANCE.deserializeFromDirectMemoryObject(pointer, offset);
   }
 
   @Override
-  public OIdentifiable deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
-    return OLinkSerializer.INSTANCE.deserializeFromDirectMemoryObject(wrapper, offset);
+  public OIdentifiable deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    return OLinkSerializer.INSTANCE.deserializeFromByteBufferObject(byteBuffer, offset);
+  }
+
+  @Override
+  public OIdentifiable deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
+    return OLinkSerializer.INSTANCE.deserializeFromByteBufferObject(wrapper, offset);
   }
 
   @Override
@@ -105,8 +116,13 @@ public class OStreamSerializerRID implements OStreamSerializer, OBinarySerialize
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
-    return OLinkSerializer.INSTANCE.getObjectSizeInDirectMemory(wrapper, offset);
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
+    return OLinkSerializer.INSTANCE.getObjectSizeInByteBuffer(wrapper, offset);
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return OLinkSerializer.INSTANCE.getObjectSizeInByteBuffer(byteBuffer, offset);
   }
 
   public boolean isFixedLength() {

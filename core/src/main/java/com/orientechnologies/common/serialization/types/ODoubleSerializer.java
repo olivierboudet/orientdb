@@ -25,6 +25,7 @@ import com.orientechnologies.common.serialization.OBinaryConverter;
 import com.orientechnologies.common.serialization.OBinaryConverterFactory;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
@@ -34,13 +35,13 @@ import java.nio.ByteOrder;
  * @since 17.01.12
  */
 public class ODoubleSerializer implements OBinarySerializer<Double> {
-  public static final byte              ID          = 6;
+  public static final  byte              ID          = 6;
   /**
    * size of double value in bytes
    */
-  public static final int               DOUBLE_SIZE = 8;
-  private static final OBinaryConverter CONVERTER   = OBinaryConverterFactory.getConverter();
-  public static final ODoubleSerializer       INSTANCE    = new ODoubleSerializer();
+  public static final  int               DOUBLE_SIZE = 8;
+  private static final OBinaryConverter  CONVERTER   = OBinaryConverterFactory.getConverter();
+  public static final  ODoubleSerializer INSTANCE    = new ODoubleSerializer();
 
   public int getObjectSize(Double object, Object... hints) {
     return DOUBLE_SIZE;
@@ -90,6 +91,11 @@ public class ODoubleSerializer implements OBinarySerializer<Double> {
     pointer.setLong(offset, Double.doubleToLongBits(object));
   }
 
+  @Override
+  public void serializeInByteBuffer(Double object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    byteBuffer.putLong(offset, Double.doubleToLongBits(object));
+  }
+
   public void serializeInDirectMemory(final double object, final ODirectMemoryPointer pointer, final long offset,
       final Object... hints) {
     pointer.setLong(offset, Double.doubleToLongBits(object));
@@ -101,7 +107,12 @@ public class ODoubleSerializer implements OBinarySerializer<Double> {
   }
 
   @Override
-  public Double deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public Double deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    return Double.longBitsToDouble(byteBuffer.getLong(offset));
+  }
+
+  @Override
+  public Double deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return Double.longBitsToDouble(wrapper.getLong(offset));
   }
 
@@ -109,7 +120,7 @@ public class ODoubleSerializer implements OBinarySerializer<Double> {
     return Double.longBitsToDouble(pointer.getLong(offset));
   }
 
-  public double deserializeFromDirectMemory(OWALChangesTree.PointerWrapper wrapper, final long offset) {
+  public double deserializeFromByteBuffer(OWALChangesTree.BufferWrapper wrapper, final int offset) {
     return Double.longBitsToDouble(wrapper.getLong(offset));
   }
 
@@ -119,7 +130,12 @@ public class ODoubleSerializer implements OBinarySerializer<Double> {
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return DOUBLE_SIZE;
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return DOUBLE_SIZE;
   }
 

@@ -19,6 +19,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -106,10 +107,10 @@ public class ReadWriteCacheConcurrentTest {
   }
 
   private void initBuffer() throws IOException {
-    writeBuffer = new OWOWCache(false, 8 + systemOffset, 10000, null, -1, 15000 * (8 + systemOffset + 2 * OWOWCache.PAGE_PADDING),
-        4 * (8 + systemOffset + 2 * OWOWCache.PAGE_PADDING) + 15000 * (8 + systemOffset + 2 * OWOWCache.PAGE_PADDING),
+    writeBuffer = new OWOWCache(false, 8 + systemOffset, 10000, null, -1, 15000 * (8 + systemOffset),
+        4 * (8 + systemOffset) + 15000 * (8 + systemOffset),
         storageLocal, true, 1);
-    readBuffer = new O2QCache(4 * (8 + systemOffset + 2 * OWOWCache.PAGE_PADDING), 8 + systemOffset, true);
+    readBuffer = new O2QCache(4 * (8 + systemOffset), 8 + systemOffset, true);
   }
 
   @AfterClass
@@ -250,8 +251,10 @@ public class ReadWriteCacheConcurrentTest {
 
       pointer.acquireExclusiveLock();
 
-      pointer.getDataPointer().set(systemOffset + OWOWCache.PAGE_PADDING,
-          new byte[] { version.byteValue(), 2, 3, seed, 5, 6, (byte) fileNumber, (byte) (pageIndex & 0xFF) }, 0, 8);
+      ByteBuffer byteBuffer = pointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+      byteBuffer.put(new byte[] { version.byteValue(), 2, 3, seed, 5, 6, (byte) fileNumber, (byte) (pageIndex & 0xFF) });
+
       cacheEntry.markDirty();
 
       pointer.releaseExclusiveLock();
@@ -304,7 +307,10 @@ public class ReadWriteCacheConcurrentTest {
       OCacheEntry cacheEntry = readBuffer.load(fileIds.get(fileNumber), pageIndex, false, writeBuffer, 0);
       OCachePointer pointer = cacheEntry.getCachePointer();
 
-      byte[] content = pointer.getDataPointer().get(systemOffset + OWOWCache.PAGE_PADDING, 8);
+      byte[] content = new byte[8];
+      ByteBuffer byteBuffer = pointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+      byteBuffer.get(content);
 
       readBuffer.release(cacheEntry, writeBuffer);
 

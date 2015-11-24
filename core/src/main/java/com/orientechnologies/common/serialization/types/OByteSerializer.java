@@ -23,6 +23,8 @@ package com.orientechnologies.common.serialization.types;
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
+
 /**
  * Serializer for byte type .
  *
@@ -102,7 +104,22 @@ public class OByteSerializer implements OBinarySerializer<Byte> {
   }
 
   @Override
-  public Byte deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public Byte deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    return byteBuffer.get(offset);
+  }
+
+  @Override
+  public void serializeInByteBuffer(Byte object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    byteBuffer.put(offset, object);
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return BYTE_SIZE;
+  }
+
+  @Override
+  public Byte deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return wrapper.getByte(offset);
   }
 
@@ -110,7 +127,7 @@ public class OByteSerializer implements OBinarySerializer<Byte> {
     return pointer.getByte(offset);
   }
 
-  public byte deserializeFromDirectMemory(final OWALChangesTree.PointerWrapper wrapper, final long offset) {
+  public byte deserializeFromDirectMemory(final OWALChangesTree.BufferWrapper wrapper, final int offset) {
     return wrapper.getByte(offset);
   }
 
@@ -120,7 +137,7 @@ public class OByteSerializer implements OBinarySerializer<Byte> {
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return BYTE_SIZE;
   }
 

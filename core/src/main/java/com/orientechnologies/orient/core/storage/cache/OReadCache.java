@@ -36,7 +36,7 @@ import java.io.IOException;
  * <li>Load page which you want to use to write data using method {@link #load(long, long, boolean, OWriteCache)}</li>
  * <li>Get pointer to the memory page {@link OCacheEntry#getCachePointer()}</li>
  * <li>Lock allocated page for writes {@link OCachePointer#acquireExclusiveLock()}</li>
- * <li>Get pointer to the direct memory which is allocated to hold page data {@link OCachePointer#getDataPointer()}</li>
+ * <li>Get pointer to the direct memory which is allocated to hold page data {@link OCachePointer#getByteBuffer()}</li>
  * <li>Change page content as you wish.</li>
  * <li>Release page write lock {@link OCachePointer#releaseExclusiveLock()}</li>
  * <li>Mark page as dirty so it will be flushed eventually to the disk {@link OCacheEntry#markDirty()}</li>

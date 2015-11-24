@@ -21,7 +21,10 @@ import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import test.configuration.BeforeClassThreadB;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Random;
 
 /**
@@ -32,8 +35,8 @@ import java.util.Random;
 public class CharSerializerTest {
   private static final int       FIELD_SIZE = 2;
   private static final Character OBJECT     = (char) (new Random()).nextInt();
-  private OCharSerializer        charSerializer;
-  byte[]                         stream     = new byte[FIELD_SIZE];
+  private OCharSerializer charSerializer;
+  byte[] stream = new byte[FIELD_SIZE];
 
   @BeforeClass
   public void beforeClass() {
@@ -56,12 +59,8 @@ public class CharSerializerTest {
 
   public void testNativeDirectMemoryCompatibility() {
     charSerializer.serializeNative(OBJECT, stream, 0);
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(stream);
-    try {
-      Assert.assertEquals(charSerializer.deserializeFromDirectMemoryObject(pointer, 0), OBJECT);
-    } finally {
-      pointer.free();
-    }
-
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(stream.length).order(ByteOrder.nativeOrder());
+    byteBuffer.put(stream);
+    Assert.assertEquals(charSerializer.deserializeFromByteBufferObject(byteBuffer, 0), OBJECT);
   }
 }

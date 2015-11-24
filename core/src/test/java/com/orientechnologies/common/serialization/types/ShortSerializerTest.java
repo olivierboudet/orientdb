@@ -22,16 +22,19 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 /**
  * @author Ilya Bershadskiy (ibersh20-at-gmail.com)
  * @since 18.01.12
  */
 @Test
 public class ShortSerializerTest {
-  private static final int   FIELD_SIZE = 2;
-  byte[]                     stream     = new byte[FIELD_SIZE];
-  private static final Short OBJECT     = 1;
-  private OShortSerializer   shortSerializer;
+  private static final int FIELD_SIZE = 2;
+  byte[] stream = new byte[FIELD_SIZE];
+  private static final Short OBJECT = 1;
+  private OShortSerializer shortSerializer;
 
   @BeforeClass
   public void beforeClass() {
@@ -55,11 +58,7 @@ public class ShortSerializerTest {
   public void testNativeDirectMemoryCompatibility() {
     shortSerializer.serializeNative(OBJECT, stream, 0);
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(stream);
-    try {
-      Assert.assertEquals(shortSerializer.deserializeFromDirectMemoryObject(pointer, 0), OBJECT);
-    } finally {
-      pointer.free();
-    }
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(stream.length).order(ByteOrder.nativeOrder());
+    Assert.assertEquals(shortSerializer.deserializeFromByteBufferObject(byteBuffer, 0), OBJECT);
   }
 }

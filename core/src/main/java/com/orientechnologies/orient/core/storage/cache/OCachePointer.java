@@ -19,10 +19,10 @@
  */
 package com.orientechnologies.orient.core.storage.cache;
 
-import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
-import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -33,36 +33,30 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @since 05.08.13
  */
 public class OCachePointer {
-  private static final int            WRITERS_OFFSET         = 32;
-  private static final int            READERS_MASK           = 0xFFFFFFFF;
+  private static final int WRITERS_OFFSET = 32;
+  private static final int READERS_MASK   = 0xFFFFFFFF;
 
-  private final ReadWriteLock         readWriteLock          = new ReentrantReadWriteLock();
+  private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
-  private final AtomicInteger         referrersCount         = new AtomicInteger();
-  private final AtomicLong            readersWritersReferrer = new AtomicLong();
+  private final AtomicInteger referrersCount         = new AtomicInteger();
+  private final AtomicLong    readersWritersReferrer = new AtomicLong();
 
-  private final AtomicInteger         usagesCounter          = new AtomicInteger();
+  private final AtomicInteger usagesCounter = new AtomicInteger();
+  private volatile OPageCacheByteBuffersPool byteBuffersPool;
 
   private volatile OLogSequenceNumber lastFlushedLsn;
 
-  private volatile WritersListener    writersListener;
+  private volatile WritersListener writersListener;
 
-  private final ODirectMemoryPointer  dataPointer;
-  private final long                  fileId;
-  private final long                  pageIndex;
+  private volatile ByteBuffer byteBuffer;
+  private final    long       fileId;
+  private final    long       pageIndex;
 
-  public OCachePointer(final ODirectMemoryPointer dataPointer, final OLogSequenceNumber lastFlushedLsn, final long fileId,
-      final long pageIndex) {
+  public OCachePointer(OPageCacheByteBuffersPool byteBuffersPool, final ByteBuffer byteBuffer,
+      final OLogSequenceNumber lastFlushedLsn, final long fileId, final long pageIndex) {
+    this.byteBuffersPool = byteBuffersPool;
     this.lastFlushedLsn = lastFlushedLsn;
-    this.dataPointer = dataPointer;
-
-    this.fileId = fileId;
-    this.pageIndex = pageIndex;
-  }
-
-  public OCachePointer(final byte[] data, final OLogSequenceNumber lastFlushedLsn, final long fileId, final long pageIndex) {
-    this.lastFlushedLsn = lastFlushedLsn;
-    dataPointer = ODirectMemoryPointerFactory.instance().createPointer(data);
+    this.byteBuffer = byteBuffer;
 
     this.fileId = fileId;
     this.pageIndex = pageIndex;
@@ -185,15 +179,21 @@ public class OCachePointer {
   public void decrementReferrer() {
     final int rf = referrersCount.decrementAndGet();
     if (rf == 0) {
-      dataPointer.free();
+      ByteBuffer buffer = byteBuffer;
+      byteBuffer = null;
+      byteBuffersPool.release(buffer);
     }
 
     if (rf < 0)
       throw new IllegalStateException("Invalid direct memory state, number of referrers can not be negative " + rf);
   }
 
-  public ODirectMemoryPointer getDataPointer() {
-    return dataPointer;
+  public ByteBuffer getByteBuffer() {
+    return byteBuffer;
+  }
+
+  public OPageCacheByteBuffersPool getByteBuffersPool() {
+    return byteBuffersPool;
   }
 
   public void acquireExclusiveLock() {
@@ -224,8 +224,9 @@ public class OCachePointer {
   protected void finalize() throws Throwable {
     super.finalize();
 
-    if (referrersCount.get() > 0)
-      dataPointer.free();
+    if (referrersCount.get() > 0) {
+      byteBuffersPool.release(byteBuffer);
+    }
   }
 
   @Override
@@ -237,7 +238,7 @@ public class OCachePointer {
 
     OCachePointer that = (OCachePointer) o;
 
-    if (dataPointer != null ? !dataPointer.equals(that.dataPointer) : that.dataPointer != null)
+    if (byteBuffer != null ? !byteBuffer.equals(that.byteBuffer) : that.byteBuffer != null)
       return false;
 
     return true;
@@ -245,13 +246,13 @@ public class OCachePointer {
 
   @Override
   public int hashCode() {
-    return dataPointer != null ? dataPointer.hashCode() : 0;
+    return byteBuffer != null ? byteBuffer.hashCode() : 0;
   }
 
   @Override
   public String toString() {
-    return "OCachePointer{" + "referrersCount=" + referrersCount + ", usagesCount=" + usagesCounter + ", dataPointer="
-        + dataPointer + '}';
+    return "OCachePointer{" + "referrersCount=" + referrersCount + ", usagesCount=" + usagesCounter + ", byteBuffer=" + byteBuffer
+        + '}';
   }
 
   private long composeReadersWriters(int readers, int writers) {

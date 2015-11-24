@@ -33,9 +33,7 @@ import com.orientechnologies.common.serialization.types.OIntegerSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.exception.OSBTreeBonsaiLocalException;
-import com.orientechnologies.orient.core.index.sbtree.local.OSBTree;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
-import com.orientechnologies.orient.core.index.sbtree.local.OSBTreeException;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
 /**
@@ -222,7 +220,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
   public void remove(int entryIndex) throws IOException {
     int entryPosition = getIntValue(offset + POSITIONS_ARRAY_OFFSET + entryIndex * OIntegerSerializer.INT_SIZE);
 
-    int entrySize = getObjectSizeInDirectMemory(keySerializer, offset + entryPosition);
+    int entrySize = getObjectSizeInByteBuffer(keySerializer, offset + entryPosition);
     if (isLeaf) {
       assert valueSerializer.isFixedLength();
       entrySize += valueSerializer.getFixedLength();
@@ -264,7 +262,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
 
     if (isLeaf) {
       K key = deserializeFromDirectMemory(keySerializer, offset + entryPosition);
-      entryPosition += getObjectSizeInDirectMemory(keySerializer, offset + entryPosition);
+      entryPosition += getObjectSizeInByteBuffer(keySerializer, offset + entryPosition);
 
       V value = deserializeFromDirectMemory(valueSerializer, offset + entryPosition);
 
@@ -400,7 +398,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     assert valueSerializer.isFixedLength();
 
     int entryPosition = getIntValue(offset + index * OIntegerSerializer.INT_SIZE + POSITIONS_ARRAY_OFFSET);
-    entryPosition += getObjectSizeInDirectMemory(keySerializer, offset + entryPosition);
+    entryPosition += getObjectSizeInByteBuffer(keySerializer, offset + entryPosition);
 
     final int size = valueSerializer.getFixedLength();
 

@@ -25,6 +25,7 @@ import com.orientechnologies.common.serialization.OBinaryConverter;
 import com.orientechnologies.common.serialization.OBinaryConverterFactory;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
@@ -34,13 +35,13 @@ import java.nio.ByteOrder;
  * @since 18.01.12
  */
 public class OShortSerializer implements OBinarySerializer<Short> {
-  public static final byte              ID         = 12;
+  public static final  byte             ID         = 12;
   /**
    * size of short value in bytes
    */
-  public static final int               SHORT_SIZE = 2;
+  public static final  int              SHORT_SIZE = 2;
   private static final OBinaryConverter CONVERTER  = OBinaryConverterFactory.getConverter();
-  public static final OShortSerializer        INSTANCE   = new OShortSerializer();
+  public static final  OShortSerializer INSTANCE   = new OShortSerializer();
 
   public int getObjectSize(Short object, Object... hints) {
     return SHORT_SIZE;
@@ -91,12 +92,22 @@ public class OShortSerializer implements OBinarySerializer<Short> {
   }
 
   @Override
+  public void serializeInByteBuffer(Short object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    byteBuffer.putShort(offset, object);
+  }
+
+  @Override
   public Short deserializeFromDirectMemoryObject(ODirectMemoryPointer pointer, long offset) {
     return pointer.getShort(offset);
   }
 
   @Override
-  public Short deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public Short deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    return byteBuffer.getShort(offset);
+  }
+
+  @Override
+  public Short deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return wrapper.getShort(offset);
   }
 
@@ -112,11 +123,15 @@ public class OShortSerializer implements OBinarySerializer<Short> {
     pointer.setShort(offset, object);
   }
 
+  public short deserializeFromByteBuffer(ByteBuffer pointer, int offset) {
+    return pointer.getShort(offset);
+  }
+
   public short deserializeFromDirectMemory(ODirectMemoryPointer pointer, long offset) {
     return pointer.getShort(offset);
   }
 
-  public short deserializeFromDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public short deserializeFromByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return wrapper.getShort(offset);
   }
 
@@ -126,7 +141,12 @@ public class OShortSerializer implements OBinarySerializer<Short> {
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
+    return SHORT_SIZE;
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
     return SHORT_SIZE;
   }
 

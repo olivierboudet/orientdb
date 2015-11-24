@@ -23,6 +23,7 @@ package com.orientechnologies.common.serialization.types;
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -34,7 +35,7 @@ import java.util.Date;
  */
 public class ODateSerializer implements OBinarySerializer<Date> {
 
-  public static final byte      ID       = 4;
+  public static final byte            ID       = 4;
   public static final ODateSerializer INSTANCE = new ODateSerializer();
 
   public int getObjectSize(Date object, Object... hints) {
@@ -99,15 +100,38 @@ public class ODateSerializer implements OBinarySerializer<Date> {
   }
 
   @Override
+  public void serializeInByteBuffer(Date object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    final Calendar calendar = Calendar.getInstance();
+    calendar.setTime(object);
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+    final ODateTimeSerializer dateTimeSerializer = ODateTimeSerializer.INSTANCE;
+    dateTimeSerializer.serializeInByteBuffer(calendar.getTime(), byteBuffer, offset);
+  }
+
+  @Override
   public Date deserializeFromDirectMemoryObject(final ODirectMemoryPointer pointer, final long offset) {
     final ODateTimeSerializer dateTimeSerializer = ODateTimeSerializer.INSTANCE;
     return dateTimeSerializer.deserializeFromDirectMemoryObject(pointer, offset);
   }
 
   @Override
-  public Date deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public Date deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
     final ODateTimeSerializer dateTimeSerializer = ODateTimeSerializer.INSTANCE;
-    return dateTimeSerializer.deserializeFromDirectMemoryObject(wrapper, offset);
+    return dateTimeSerializer.deserializeFromByteBufferObject(byteBuffer, offset);
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return OLongSerializer.LONG_SIZE;
+  }
+
+  @Override
+  public Date deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
+    final ODateTimeSerializer dateTimeSerializer = ODateTimeSerializer.INSTANCE;
+    return dateTimeSerializer.deserializeFromByteBufferObject(wrapper, offset);
   }
 
   @Override
@@ -116,7 +140,7 @@ public class ODateSerializer implements OBinarySerializer<Date> {
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return OLongSerializer.LONG_SIZE;
   }
 

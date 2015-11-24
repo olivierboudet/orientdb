@@ -20,6 +20,7 @@
 
 package com.orientechnologies.common.serialization.types;
 
+import java.nio.ByteBuffer;
 import java.util.UUID;
 
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
@@ -74,8 +75,8 @@ public class OUUIDSerializer implements OBinarySerializer<UUID> {
   @Override
   public void serializeNativeObject(final UUID object, final byte[] stream, final int startPosition, final Object... hints) {
     OLongSerializer.INSTANCE.serializeNative(object.getMostSignificantBits(), stream, startPosition, hints);
-    OLongSerializer.INSTANCE.serializeNative(object.getLeastSignificantBits(), stream, startPosition + OLongSerializer.LONG_SIZE,
-        hints);
+    OLongSerializer.INSTANCE
+        .serializeNative(object.getLeastSignificantBits(), stream, startPosition + OLongSerializer.LONG_SIZE, hints);
   }
 
   @Override
@@ -93,23 +94,38 @@ public class OUUIDSerializer implements OBinarySerializer<UUID> {
   @Override
   public void serializeInDirectMemoryObject(UUID object, ODirectMemoryPointer pointer, long offset, Object... hints) {
     OLongSerializer.INSTANCE.serializeInDirectMemory(object.getMostSignificantBits(), pointer, offset, hints);
-    OLongSerializer.INSTANCE.serializeInDirectMemory(object.getLeastSignificantBits(), pointer, offset + OLongSerializer.LONG_SIZE,
-        hints);
+    OLongSerializer.INSTANCE
+        .serializeInDirectMemory(object.getLeastSignificantBits(), pointer, offset + OLongSerializer.LONG_SIZE, hints);
+  }
+
+  @Override
+  public void serializeInByteBuffer(UUID object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    OLongSerializer.INSTANCE.serializeInByteBuffer(object.getMostSignificantBits(), byteBuffer, offset, hints);
+    OLongSerializer.INSTANCE
+        .serializeInByteBuffer(object.getLeastSignificantBits(), byteBuffer, offset + OLongSerializer.LONG_SIZE, hints);
   }
 
   @Override
   public UUID deserializeFromDirectMemoryObject(final ODirectMemoryPointer pointer, final long offset) {
     final long mostSignificantBits = OLongSerializer.INSTANCE.deserializeFromDirectMemory(pointer, offset);
-    final long leastSignificantBits = OLongSerializer.INSTANCE.deserializeFromDirectMemory(pointer, offset
-        + OLongSerializer.LONG_SIZE);
+    final long leastSignificantBits = OLongSerializer.INSTANCE
+        .deserializeFromDirectMemory(pointer, offset + OLongSerializer.LONG_SIZE);
     return new UUID(mostSignificantBits, leastSignificantBits);
   }
 
   @Override
-  public UUID deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
-    final long mostSignificantBits = OLongSerializer.INSTANCE.deserializeFromDirectMemory(wrapper, offset);
-    final long leastSignificantBits = OLongSerializer.INSTANCE.deserializeFromDirectMemory(wrapper, offset
-        + OLongSerializer.LONG_SIZE);
+  public UUID deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    final long mostSignificantBits = OLongSerializer.INSTANCE.deserializeFromByteBuffer(byteBuffer, offset);
+    final long leastSignificantBits = OLongSerializer.INSTANCE
+        .deserializeFromByteBuffer(byteBuffer, offset + OLongSerializer.LONG_SIZE);
+    return new UUID(mostSignificantBits, leastSignificantBits);
+  }
+
+  @Override
+  public UUID deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
+    final long mostSignificantBits = OLongSerializer.INSTANCE.deserializeFromByteBuffer(wrapper, offset);
+    final long leastSignificantBits = OLongSerializer.INSTANCE
+        .deserializeFromByteBuffer(wrapper, offset + OLongSerializer.LONG_SIZE);
     return new UUID(mostSignificantBits, leastSignificantBits);
 
   }
@@ -120,7 +136,12 @@ public class OUUIDSerializer implements OBinarySerializer<UUID> {
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return UUID_SIZE;
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return UUID_SIZE;
   }
 

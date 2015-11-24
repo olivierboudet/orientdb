@@ -35,17 +35,18 @@ import com.orientechnologies.orient.core.serialization.serializer.stream.OStream
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
  * Serializer that is used for serialization of {@link OCompositeKey} keys in index.
- * 
+ *
  * @author Andrey Lomakin
  * @since 29.07.11
  */
 public class OCompositeKeySerializer implements OBinarySerializer<OCompositeKey>, OStreamSerializer {
 
-  public static final String                  NAME     = "cks";
+  public static final String NAME = "cks";
 
   public static final OCompositeKeySerializer INSTANCE = new OCompositeKeySerializer();
   public static final byte                    ID       = 14;
@@ -68,8 +69,8 @@ public class OCompositeKeySerializer implements OBinarySerializer<OCompositeKey>
         else
           type = OType.getTypeByClass(key.getClass());
 
-        size += OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE
-            + ((OBinarySerializer<Object>) factory.getObjectSerializer(type)).getObjectSize(key);
+        size += OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + ((OBinarySerializer<Object>) factory.getObjectSerializer(type))
+            .getObjectSize(key);
       } else {
         size += OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + ONullSerializer.INSTANCE.getObjectSize(null);
       }
@@ -242,7 +243,8 @@ public class OCompositeKeySerializer implements OBinarySerializer<OCompositeKey>
   }
 
   @Override
-  public void serializeInDirectMemoryObject(OCompositeKey compositeKey, ODirectMemoryPointer pointer, long offset, Object... hints) {
+  public void serializeInDirectMemoryObject(OCompositeKey compositeKey, ODirectMemoryPointer pointer, long offset,
+      Object... hints) {
     final OType[] types = getKeyTypes(hints);
 
     final List<Object> keys = compositeKey.getKeys();
@@ -283,6 +285,43 @@ public class OCompositeKeySerializer implements OBinarySerializer<OCompositeKey>
     pointer.setInt(oldStartOffset, (int) (offset - oldStartOffset));
   }
 
+  @Override
+  public void serializeInByteBuffer(OCompositeKey compositeKey, ByteBuffer byteBuffer, final int offset, Object... hints) {
+    final OType[] types = getKeyTypes(hints);
+
+    final List<Object> keys = compositeKey.getKeys();
+    final int keysSize = keys.size();
+
+    byteBuffer.position(offset + OIntegerSerializer.INT_SIZE);
+    byteBuffer.putInt(keysSize);
+
+    final OBinarySerializerFactory factory = OBinarySerializerFactory.getInstance();
+
+    for (int i = 0; i < keys.size(); i++) {
+      final Object key = keys.get(i);
+
+      OBinarySerializer<Object> binarySerializer;
+      if (key != null) {
+        final OType type;
+        if (types.length > i)
+          type = types[i];
+        else
+          type = OType.getTypeByClass(key.getClass());
+
+        binarySerializer = factory.getObjectSerializer(type);
+      } else
+        binarySerializer = ONullSerializer.INSTANCE;
+
+      byteBuffer.put(binarySerializer.getId());
+
+      int bufferPos = byteBuffer.position();
+      binarySerializer.serializeInByteBuffer(key, byteBuffer, bufferPos);
+      byteBuffer.position(binarySerializer.getObjectSize(key) + bufferPos);
+    }
+
+    byteBuffer.putInt(offset, byteBuffer.position() - offset);
+  }
+
   private OType[] getKeyTypes(Object[] hints) {
     final OType[] types;
 
@@ -318,7 +357,27 @@ public class OCompositeKeySerializer implements OBinarySerializer<OCompositeKey>
   }
 
   @Override
-  public OCompositeKey deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public OCompositeKey deserializeFromByteBufferObject(ByteBuffer byteBuffer, final int offset) {
+    final OCompositeKey compositeKey = new OCompositeKey();
+
+    byteBuffer.position(offset + OIntegerSerializer.INT_SIZE);
+    final int keysSize = byteBuffer.getInt();
+
+    final OBinarySerializerFactory factory = OBinarySerializerFactory.getInstance();
+    for (int i = 0; i < keysSize; i++) {
+      final byte serializerId = byteBuffer.get();
+      OBinarySerializer<Object> binarySerializer = (OBinarySerializer<Object>) factory.getObjectSerializer(serializerId);
+      final int bufferPos = byteBuffer.position();
+      final Object key = binarySerializer.deserializeFromByteBufferObject(byteBuffer, bufferPos);
+      byteBuffer.position(bufferPos + binarySerializer.getObjectSizeInByteBuffer(byteBuffer, bufferPos));
+      compositeKey.addKey(key);
+    }
+
+    return compositeKey;
+  }
+
+  @Override
+  public OCompositeKey deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
     final OCompositeKey compositeKey = new OCompositeKey();
 
     offset += OIntegerSerializer.INT_SIZE;
@@ -332,7 +391,7 @@ public class OCompositeKeySerializer implements OBinarySerializer<OCompositeKey>
       offset += OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE;
 
       OBinarySerializer<Object> binarySerializer = (OBinarySerializer<Object>) factory.getObjectSerializer(serializerId);
-      final Object key = binarySerializer.deserializeFromDirectMemoryObject(wrapper, offset);
+      final Object key = binarySerializer.deserializeFromByteBufferObject(wrapper, offset);
       compositeKey.addKey(key);
 
       offset += binarySerializer.getObjectSize(key);
@@ -347,7 +406,12 @@ public class OCompositeKeySerializer implements OBinarySerializer<OCompositeKey>
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return byteBuffer.getInt(offset);
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return wrapper.getInt(offset);
   }
 

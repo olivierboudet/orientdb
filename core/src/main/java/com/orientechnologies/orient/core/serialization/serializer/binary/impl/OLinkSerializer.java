@@ -29,6 +29,8 @@ import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.id.ORecordId;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
+
 import static com.orientechnologies.orient.core.serialization.OBinaryProtocol.bytes2long;
 import static com.orientechnologies.orient.core.serialization.OBinaryProtocol.bytes2short;
 import static com.orientechnologies.orient.core.serialization.OBinaryProtocol.long2bytes;
@@ -41,10 +43,10 @@ import static com.orientechnologies.orient.core.serialization.OBinaryProtocol.sh
  * @since 07.02.12
  */
 public class OLinkSerializer implements OBinarySerializer<OIdentifiable> {
-  public static final byte      ID               = 9;
-  private static final int      CLUSTER_POS_SIZE = OLongSerializer.LONG_SIZE;
-  public static final int       RID_SIZE         = OShortSerializer.SHORT_SIZE + CLUSTER_POS_SIZE;
-  public static final OLinkSerializer INSTANCE         = new OLinkSerializer();
+  public static final  byte            ID               = 9;
+  private static final int             CLUSTER_POS_SIZE = OLongSerializer.LONG_SIZE;
+  public static final  int             RID_SIZE         = OShortSerializer.SHORT_SIZE + CLUSTER_POS_SIZE;
+  public static final  OLinkSerializer INSTANCE         = new OLinkSerializer();
 
   public int getObjectSize(final OIdentifiable rid, Object... hints) {
     return RID_SIZE;
@@ -100,12 +102,26 @@ public class OLinkSerializer implements OBinarySerializer<OIdentifiable> {
   }
 
   @Override
+  public void serializeInByteBuffer(OIdentifiable object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    final ORID r = object.getIdentity();
+
+    OShortSerializer.INSTANCE.serializeInByteBuffer((short) r.getClusterId(), byteBuffer, offset);
+    // Wrong implementation but needed for binary compatibility
+    byte[] stream = new byte[OLongSerializer.LONG_SIZE];
+    OLongSerializer.INSTANCE.serialize(r.getClusterPosition(), stream, 0);
+
+    byteBuffer.position(offset + OShortSerializer.SHORT_SIZE);
+    byteBuffer.put(stream);
+    // OLongSerializer.INSTANCE.serializeInDirectMemory(r.getClusterPosition(), pointer, offset + OShortSerializer.SHORT_SIZE);
+  }
+
+  @Override
   public OIdentifiable deserializeFromDirectMemoryObject(ODirectMemoryPointer pointer, long offset) {
     final int clusterId = OShortSerializer.INSTANCE.deserializeFromDirectMemory(pointer, offset);
 
     // Wrong implementation but needed for binary compatibility
-    final long clusterPosition = OLongSerializer.INSTANCE.deserialize(
-        pointer.get(offset + OShortSerializer.SHORT_SIZE, OLongSerializer.LONG_SIZE), 0);
+    final long clusterPosition = OLongSerializer.INSTANCE
+        .deserialize(pointer.get(offset + OShortSerializer.SHORT_SIZE, OLongSerializer.LONG_SIZE), 0);
 
     // final long clusterPosition = OLongSerializer.INSTANCE
     // .deserializeFromDirectMemory(pointer, offset + OShortSerializer.SHORT_SIZE);
@@ -114,12 +130,29 @@ public class OLinkSerializer implements OBinarySerializer<OIdentifiable> {
   }
 
   @Override
-  public OIdentifiable deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
-    final int clusterId = OShortSerializer.INSTANCE.deserializeFromDirectMemory(wrapper, offset);
+  public OIdentifiable deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    final int clusterId = OShortSerializer.INSTANCE.deserializeFromByteBuffer(byteBuffer, offset);
+
+    byte[] binaryLink = new byte[OLongSerializer.LONG_SIZE];
+    byteBuffer.position(offset + OShortSerializer.SHORT_SIZE);
+    byteBuffer.get(binaryLink);
+    // Wrong implementation but needed for binary compatibility
+    final long clusterPosition = OLongSerializer.INSTANCE.deserialize(binaryLink, 0);
+
+    // final long clusterPosition = OLongSerializer.INSTANCE
+    // .deserializeFromDirectMemory(pointer, offset + OShortSerializer.SHORT_SIZE);
+
+    return new ORecordId(clusterId, clusterPosition);
+
+  }
+
+  @Override
+  public OIdentifiable deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, final int offset) {
+    final int clusterId = OShortSerializer.INSTANCE.deserializeFromByteBuffer(wrapper, offset);
 
     // Wrong implementation but needed for binary compatibility
-    final long clusterPosition = OLongSerializer.INSTANCE.deserialize(
-        wrapper.get(offset + OShortSerializer.SHORT_SIZE, OLongSerializer.LONG_SIZE), 0);
+    final long clusterPosition = OLongSerializer.INSTANCE
+        .deserialize(wrapper.get(offset + OShortSerializer.SHORT_SIZE, OLongSerializer.LONG_SIZE), 0);
 
     // final long clusterPosition = OLongSerializer.INSTANCE
     // .deserializeFromDirectMemory(pointer, offset + OShortSerializer.SHORT_SIZE);
@@ -133,7 +166,12 @@ public class OLinkSerializer implements OBinarySerializer<OIdentifiable> {
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return RID_SIZE;
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return RID_SIZE;
   }
 

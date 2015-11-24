@@ -25,6 +25,7 @@ import com.orientechnologies.common.serialization.OBinaryConverter;
 import com.orientechnologies.common.serialization.OBinaryConverterFactory;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
@@ -34,13 +35,13 @@ import java.nio.ByteOrder;
  * @since 18.01.12
  */
 public class OFloatSerializer implements OBinarySerializer<Float> {
-  public static final byte              ID         = 7;
+  public static final  byte             ID         = 7;
   /**
    * size of float value in bytes
    */
-  public static final int               FLOAT_SIZE = 4;
+  public static final  int              FLOAT_SIZE = 4;
   private static final OBinaryConverter CONVERTER  = OBinaryConverterFactory.getConverter();
-  public static final OFloatSerializer        INSTANCE   = new OFloatSerializer();
+  public static final  OFloatSerializer INSTANCE   = new OFloatSerializer();
 
   public int getObjectSize(Float object, Object... hints) {
     return FLOAT_SIZE;
@@ -82,12 +83,22 @@ public class OFloatSerializer implements OBinarySerializer<Float> {
   }
 
   @Override
+  public void serializeInByteBuffer(Float object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    byteBuffer.putInt(offset, Float.floatToIntBits(object));
+  }
+
+  @Override
   public Float deserializeFromDirectMemoryObject(ODirectMemoryPointer pointer, long offset) {
     return Float.intBitsToFloat(pointer.getInt(offset));
   }
 
   @Override
-  public Float deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public Float deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    return Float.intBitsToFloat(byteBuffer.getInt(offset));
+  }
+
+  @Override
+  public Float deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return Float.intBitsToFloat(wrapper.getInt(offset));
   }
 
@@ -108,7 +119,7 @@ public class OFloatSerializer implements OBinarySerializer<Float> {
     return Float.intBitsToFloat(pointer.getInt(offset));
   }
 
-  public float deserializeFromDirectMemory(OWALChangesTree.PointerWrapper wrapper, final long offset) {
+  public float deserializeFromByteBuffer(OWALChangesTree.BufferWrapper wrapper, final int offset) {
     return Float.intBitsToFloat(wrapper.getInt(offset));
   }
 
@@ -118,7 +129,12 @@ public class OFloatSerializer implements OBinarySerializer<Float> {
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return FLOAT_SIZE;
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return FLOAT_SIZE;
   }
 

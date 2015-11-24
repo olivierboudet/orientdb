@@ -27,17 +27,19 @@ import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.serialization.serializer.binary.OBinarySerializerFactory;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
+
 /**
  * Serializer that is used for serialization of non {@link com.orientechnologies.orient.core.index.OCompositeKey} keys in index.
- * 
+ *
  * @author Andrey Lomakin
  * @since 31.03.12
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class OSimpleKeySerializer<T extends Comparable<?>> implements OBinarySerializer<T> {
 
-  private OType              type;
-  private OBinarySerializer  binarySerializer;
+  private OType             type;
+  private OBinarySerializer binarySerializer;
 
   public static final byte   ID   = 15;
   public static final String NAME = "bsks";
@@ -74,8 +76,8 @@ public class OSimpleKeySerializer<T extends Comparable<?>> implements OBinarySer
   public int getObjectSize(byte[] stream, int startPosition) {
     final byte serializerId = stream[startPosition];
     init(serializerId);
-    return OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE
-        + binarySerializer.getObjectSize(stream, startPosition + OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE);
+    return OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + binarySerializer
+        .getObjectSize(stream, startPosition + OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE);
   }
 
   public byte getId() {
@@ -108,8 +110,8 @@ public class OSimpleKeySerializer<T extends Comparable<?>> implements OBinarySer
   public int getObjectSizeNative(byte[] stream, int startPosition) {
     final byte serializerId = stream[startPosition];
     init(serializerId);
-    return OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE
-        + binarySerializer.getObjectSizeNative(stream, startPosition + OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE);
+    return OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + binarySerializer
+        .getObjectSizeNative(stream, startPosition + OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE);
   }
 
   public void serializeNativeObject(T key, byte[] stream, int startPosition, Object... hints) {
@@ -135,6 +137,15 @@ public class OSimpleKeySerializer<T extends Comparable<?>> implements OBinarySer
   }
 
   @Override
+  public void serializeInByteBuffer(T object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    init(object, hints);
+    byteBuffer.position(offset);
+
+    byteBuffer.put(binarySerializer.getId());
+    binarySerializer.serializeInByteBuffer(object, byteBuffer, offset);
+  }
+
+  @Override
   public T deserializeFromDirectMemoryObject(ODirectMemoryPointer pointer, long offset) {
     final byte typeId = pointer.getByte(offset++);
 
@@ -143,28 +154,46 @@ public class OSimpleKeySerializer<T extends Comparable<?>> implements OBinarySer
   }
 
   @Override
-  public T deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public T deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    final byte typeId = byteBuffer.get(offset++);
+
+    init(typeId);
+    return (T) binarySerializer.deserializeFromByteBufferObject(byteBuffer, offset);
+  }
+
+  @Override
+  public T deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
     final byte typeId = wrapper.getByte(offset++);
 
     init(typeId);
-    return (T) binarySerializer.deserializeFromDirectMemoryObject(wrapper, offset);
+    return (T) binarySerializer.deserializeFromByteBufferObject(wrapper, offset);
   }
 
   @Override
   public int getObjectSizeInDirectMemory(ODirectMemoryPointer pointer, long offset) {
     final byte serializerId = pointer.getByte(offset);
     init(serializerId);
-    return OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE
-        + binarySerializer.getObjectSizeInDirectMemory(pointer, OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + offset);
+    return OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + binarySerializer
+        .getObjectSizeInDirectMemory(pointer, OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + offset);
 
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    final byte serializerId = byteBuffer.get(offset);
+
+    init(serializerId);
+    return OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + binarySerializer
+        .getObjectSizeInByteBuffer(byteBuffer, OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + offset);
+
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     final byte serializerId = wrapper.getByte(offset);
     init(serializerId);
-    return OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE
-        + binarySerializer.getObjectSizeInDirectMemory(wrapper, OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + offset);
+    return OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + binarySerializer
+        .getObjectSizeInByteBuffer(wrapper, OBinarySerializerFactory.TYPE_IDENTIFIER_SIZE + offset);
   }
 
   public boolean isFixedLength() {

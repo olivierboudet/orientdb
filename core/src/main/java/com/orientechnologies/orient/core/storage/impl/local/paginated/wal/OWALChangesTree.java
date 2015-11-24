@@ -7,30 +7,31 @@ import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.common.serialization.types.OShortSerializer;
 import com.orientechnologies.common.types.OModifiableInteger;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 
 public class OWALChangesTree {
-  private static final boolean BLACK          = false;
-  private static final boolean RED            = true;
+  private static final boolean BLACK = false;
+  private static final boolean RED   = true;
 
-  private Node                 root           = null;
-  private int                  version        = 0;
+  private Node root    = null;
+  private int  version = 0;
 
-  private boolean              debug;
+  private boolean debug;
 
-  private int                  serializedSize = OIntegerSerializer.INT_SIZE;
+  private int serializedSize = OIntegerSerializer.INT_SIZE;
 
   public void setDebug(boolean debug) {
     this.debug = debug;
   }
 
-  public byte getByteValue(ODirectMemoryPointer pointer, int offset) {
+  public byte getByteValue(ByteBuffer byteBuffer, int offset) {
     final int end = offset + OByteSerializer.BYTE_SIZE;
     final List<Node> result = new ArrayList<Node>();
     findIntervals(root, offset, end, result);
 
-    if (pointer != null && result.isEmpty())
-      return pointer.getByte(offset);
+    if (byteBuffer != null && result.isEmpty())
+      return byteBuffer.get(offset);
 
     byte[] value = new byte[] { 0 };
     applyChanges(value, offset, end, result);
@@ -38,20 +39,28 @@ public class OWALChangesTree {
     return value[0];
   }
 
-  public byte[] getBinaryValue(ODirectMemoryPointer pointer, int offset, int len) {
+  public byte[] getBinaryValue(ByteBuffer byteBuffer, int offset, int len) {
     final int end = offset + len;
 
     final List<Node> result = new ArrayList<Node>();
     findIntervals(root, offset, end, result);
 
-    if (result.isEmpty() && pointer != null)
-      return pointer.get(offset, len);
+    if (result.isEmpty() && byteBuffer != null) {
+      final byte[] res = new byte[len];
+
+      byteBuffer.position(offset);
+      byteBuffer.get(res);
+
+      return res;
+    }
 
     byte[] value;
 
-    if (pointer != null)
-      value = pointer.get(offset, len);
-    else
+    if (byteBuffer != null) {
+      value = new byte[len];
+      byteBuffer.position(offset);
+      byteBuffer.get(value);
+    } else
       value = new byte[len];
 
     applyChanges(value, offset, end, result);
@@ -59,19 +68,21 @@ public class OWALChangesTree {
     return value;
   }
 
-  public short getShortValue(ODirectMemoryPointer pointer, int offset) {
+  public short getShortValue(ByteBuffer byteBuffer, int offset) {
     int end = offset + OShortSerializer.SHORT_SIZE;
 
     final List<Node> result = new ArrayList<Node>();
     findIntervals(root, offset, end, result);
 
-    if (result.isEmpty() && pointer != null)
-      return pointer.getShort(offset);
+    if (result.isEmpty() && byteBuffer != null)
+      return byteBuffer.getShort(offset);
 
     byte[] value;
-    if (pointer != null)
-      value = pointer.get(offset, OShortSerializer.SHORT_SIZE);
-    else
+    if (byteBuffer != null) {
+      value = new byte[OShortSerializer.SHORT_SIZE];
+      byteBuffer.position(offset);
+      byteBuffer.get(value);
+    } else
       value = new byte[OShortSerializer.SHORT_SIZE];
 
     applyChanges(value, offset, end, result);
@@ -79,19 +90,21 @@ public class OWALChangesTree {
     return OShortSerializer.INSTANCE.deserializeNative(value, 0);
   }
 
-  public int getIntValue(ODirectMemoryPointer pointer, int offset) {
+  public int getIntValue(ByteBuffer byteBuffer, int offset) {
     int end = offset + OIntegerSerializer.INT_SIZE;
 
     final List<Node> result = new ArrayList<Node>();
     findIntervals(root, offset, end, result);
 
-    if (result.isEmpty() && pointer != null)
-      return pointer.getInt(offset);
+    if (result.isEmpty() && byteBuffer != null)
+      return byteBuffer.getInt(offset);
 
     byte[] value;
-    if (pointer != null)
-      value = pointer.get(offset, OIntegerSerializer.INT_SIZE);
-    else
+    if (byteBuffer != null) {
+      value = new byte[OIntegerSerializer.INT_SIZE];
+      byteBuffer.position(offset);
+      byteBuffer.get(value);
+    } else
       value = new byte[OIntegerSerializer.INT_SIZE];
 
     applyChanges(value, offset, end, result);
@@ -99,19 +112,21 @@ public class OWALChangesTree {
     return OIntegerSerializer.INSTANCE.deserializeNative(value, 0);
   }
 
-  public long getLongValue(ODirectMemoryPointer pointer, int offset) {
+  public long getLongValue(ByteBuffer byteBuffer, int offset) {
     int end = offset + OLongSerializer.LONG_SIZE;
 
     final List<Node> result = new ArrayList<Node>();
     findIntervals(root, offset, end, result);
 
-    if (result.isEmpty() && pointer != null)
-      return pointer.getLong(offset);
+    if (result.isEmpty() && byteBuffer != null)
+      return byteBuffer.getLong(offset);
 
     byte[] value;
-    if (pointer != null)
-      value = pointer.get(offset, OLongSerializer.LONG_SIZE);
-    else
+    if (byteBuffer != null) {
+      value = new byte[OLongSerializer.LONG_SIZE];
+      byteBuffer.position(offset);
+      byteBuffer.get(value);
+    } else
       value = new byte[OLongSerializer.LONG_SIZE];
 
     applyChanges(value, offset, end, result);
@@ -285,21 +300,22 @@ public class OWALChangesTree {
       if (vLength <= 0)
         continue;
 
-      System.arraycopy(activeNode.value, deltaStart >= 0 ? activeStart - activeNode.start : activeStart - activeNode.start
-          - deltaStart, values, deltaStart >= 0 ? deltaStart : 0, vLength);
+      System.arraycopy(activeNode.value,
+          deltaStart >= 0 ? activeStart - activeNode.start : activeStart - activeNode.start - deltaStart, values,
+          deltaStart >= 0 ? deltaStart : 0, vLength);
     }
   }
 
-  public void applyChanges(ODirectMemoryPointer pointer) {
+  public void applyChanges(ByteBuffer byteBuffer) {
     if (root == null)
       return;
 
     final Queue<Node> processedNodes = new ArrayDeque<Node>();
-    applyChanges(pointer, root, processedNodes);
+    applyChanges(byteBuffer, root, processedNodes);
   }
 
-  public PointerWrapper wrap(final ODirectMemoryPointer pointer) {
-    return new PointerWrapper(pointer);
+  public BufferWrapper wrap(final ByteBuffer byteBuffer) {
+    return new BufferWrapper(byteBuffer);
   }
 
   public int getSerializedSize() {
@@ -364,9 +380,9 @@ public class OWALChangesTree {
     return offset;
   }
 
-  private void applyChanges(ODirectMemoryPointer pointer, Node node, Queue<Node> processedNodes) {
+  private void applyChanges(ByteBuffer byteBuffer, Node node, Queue<Node> processedNodes) {
     if (node.left != null)
-      applyChanges(pointer, node.left, processedNodes);
+      applyChanges(byteBuffer, node.left, processedNodes);
 
     int activeStart = node.start;
 
@@ -384,11 +400,12 @@ public class OWALChangesTree {
 
     if (activeStart < node.end) {
       final int vLength = node.end - activeStart;
-      pointer.set(activeStart, node.value, activeStart - node.start, vLength);
+      byteBuffer.position(activeStart);
+      byteBuffer.put(node.value, activeStart - node.start, vLength);
     }
 
     if (node.right != null)
-      applyChanges(pointer, node.right, processedNodes);
+      applyChanges(byteBuffer, node.right, processedNodes);
   }
 
   private void assertInvariants() {
@@ -737,13 +754,13 @@ public class OWALChangesTree {
     private byte[]  value;
     private int     version;
 
-    private int     start;
-    private int     end;
-    private int     maxEnd;
+    private int start;
+    private int end;
+    private int maxEnd;
 
-    private Node    parent;
-    private Node    left;
-    private Node    right;
+    private Node parent;
+    private Node left;
+    private Node right;
 
     public Node(byte[] value, int start, boolean color, int version) {
       this.color = color;
@@ -760,35 +777,35 @@ public class OWALChangesTree {
     }
   }
 
-  public final class PointerWrapper {
-    private final ODirectMemoryPointer pointer;
+  public final class BufferWrapper {
+    private final ByteBuffer byteBuffer;
 
-    private PointerWrapper(ODirectMemoryPointer pointer) {
-      this.pointer = pointer;
+    private BufferWrapper(ByteBuffer byteBuffer) {
+      this.byteBuffer = byteBuffer;
     }
 
-    public byte getByte(long offset) {
-      return OWALChangesTree.this.getByteValue(pointer, (int) offset);
+    public byte getByte(int offset) {
+      return OWALChangesTree.this.getByteValue(byteBuffer, offset);
     }
 
-    public short getShort(long offset) {
-      return OWALChangesTree.this.getShortValue(pointer, (int) offset);
+    public short getShort(int offset) {
+      return OWALChangesTree.this.getShortValue(byteBuffer, offset);
     }
 
-    public int getInt(long offset) {
-      return OWALChangesTree.this.getIntValue(pointer, (int) offset);
+    public int getInt(int offset) {
+      return OWALChangesTree.this.getIntValue(byteBuffer, offset);
     }
 
-    public long getLong(long offset) {
-      return OWALChangesTree.this.getLongValue(pointer, (int) offset);
+    public long getLong(int offset) {
+      return OWALChangesTree.this.getLongValue(byteBuffer, offset);
     }
 
-    public byte[] get(long offset, int len) {
-      return OWALChangesTree.this.getBinaryValue(pointer, (int) offset, len);
+    public byte[] get(int offset, int len) {
+      return OWALChangesTree.this.getBinaryValue(byteBuffer, offset, len);
     }
 
-    public char getChar(long offset) {
-      return (char) OWALChangesTree.this.getShortValue(pointer, (int) offset);
+    public char getChar(int offset) {
+      return (char) OWALChangesTree.this.getShortValue(byteBuffer, offset);
     }
 
   }

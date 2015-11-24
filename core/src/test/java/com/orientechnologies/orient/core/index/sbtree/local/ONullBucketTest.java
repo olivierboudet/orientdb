@@ -5,6 +5,7 @@ import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
 import com.orientechnologies.common.serialization.types.OStringSerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.cache.OCachePointer;
+import com.orientechnologies.orient.core.storage.cache.OPageCacheByteBuffersPool;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -18,8 +19,8 @@ import java.io.IOException;
 @Test
 public class ONullBucketTest {
   public void testEmptyBucket() {
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(1024);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1024);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
@@ -31,8 +32,8 @@ public class ONullBucketTest {
   }
 
   public void testAddGetValue() throws IOException {
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(1024);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1024);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
@@ -47,8 +48,8 @@ public class ONullBucketTest {
   }
 
   public void testAddRemoveValue() throws IOException {
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(1024);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1024);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
@@ -65,8 +66,8 @@ public class ONullBucketTest {
   }
 
   public void testAddRemoveAddValue() throws IOException {
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(1024);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1024);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);

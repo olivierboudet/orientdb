@@ -25,18 +25,14 @@ import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
 import com.orientechnologies.common.util.OCommonConst;
 import com.orientechnologies.orient.core.command.OCommandOutputListener;
 import com.orientechnologies.orient.core.exception.OStorageException;
-import com.orientechnologies.orient.core.storage.cache.OAbstractWriteCache;
-import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
-import com.orientechnologies.orient.core.storage.cache.OCachePointer;
-import com.orientechnologies.orient.core.storage.cache.OPageDataVerificationError;
-import com.orientechnologies.orient.core.storage.cache.OReadCache;
-import com.orientechnologies.orient.core.storage.cache.OWriteCache;
+import com.orientechnologies.orient.core.storage.cache.*;
 import com.orientechnologies.orient.core.storage.cache.local.OWOWCache;
 import com.orientechnologies.orient.core.storage.impl.local.OLowDiskSpaceListener;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -54,17 +50,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @since 6/24/14
  */
 public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements OReadCache, OWriteCache {
-  private final Lock                               metadataLock  = new ReentrantLock();
+  private final Lock metadataLock = new ReentrantLock();
 
-  private final Map<String, Integer>               fileNameIdMap = new HashMap<String, Integer>();
-  private final Map<Integer, String>               fileIdNameMap = new HashMap<Integer, String>();
+  private final Map<String, Integer> fileNameIdMap = new HashMap<String, Integer>();
+  private final Map<Integer, String> fileIdNameMap = new HashMap<Integer, String>();
 
-  private final ConcurrentMap<Integer, MemoryFile> files         = new ConcurrentHashMap<Integer, MemoryFile>();
+  private final ConcurrentMap<Integer, MemoryFile> files = new ConcurrentHashMap<Integer, MemoryFile>();
 
-  private int                                      counter       = 0;
+  private int counter = 0;
 
-  private final int                                pageSize;
-  private final int                                id;
+  private final int pageSize;
+  private final int id;
 
   public ODirectMemoryOnlyDiskCache(int pageSize, int id) {
     this.pageSize = pageSize;
@@ -374,13 +370,13 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
   }
 
   private static final class MemoryFile {
-    private final int                                      id;
-    private final int                                      storageId;
+    private final int id;
+    private final int storageId;
 
-    private final int                                      pageSize;
-    private final ReadWriteLock                            clearLock = new ReentrantReadWriteLock();
+    private final int pageSize;
+    private final ReadWriteLock clearLock = new ReentrantReadWriteLock();
 
-    private final ConcurrentSkipListMap<Long, OCacheEntry> content   = new ConcurrentSkipListMap<Long, OCacheEntry>();
+    private final ConcurrentSkipListMap<Long, OCacheEntry> content = new ConcurrentSkipListMap<Long, OCacheEntry>();
 
     private MemoryFile(int storageId, int id, int pageSize) {
       this.storageId = storageId;
@@ -411,9 +407,11 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
             index = lastIndex + 1;
           }
 
-          final ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(
-              new byte[pageSize + 2 * ODurablePage.PAGE_PADDING]);
-          final OCachePointer cachePointer = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(-1, -1), id, index);
+          final OPageCacheByteBuffersPool byteBuffersPool = OPageCacheByteBuffersPool.instance();
+          final ByteBuffer byteBuffer = byteBuffersPool.acquire(true);
+
+          final OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffer, new OLogSequenceNumber(-1, -1), id,
+              index);
           cachePointer.incrementReferrer();
 
           cacheEntry = new OCacheEntry(composeFileId(storageId, id), index, cachePointer, false);
@@ -481,7 +479,7 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
     for (MemoryFile file : files.values())
       totalPages += file.getUsedMemory();
 
-    return totalPages * (pageSize + 2 * OWOWCache.PAGE_PADDING);
+    return totalPages * (pageSize);
   }
 
   @Override

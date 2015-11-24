@@ -22,6 +22,8 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Random;
 
 /**
@@ -30,7 +32,7 @@ import java.util.Random;
  */
 @Test
 public class StringSerializerTest {
-  byte[]                    stream;
+  byte[] stream;
   private int               FIELD_SIZE;
   private String            OBJECT;
   private OStringSerializer stringSerializer;
@@ -65,11 +67,10 @@ public class StringSerializerTest {
   public void testNativeDirectMemoryCompatibility() {
     stringSerializer.serializeNativeObject(OBJECT, stream, 7);
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(stream);
-    try {
-      Assert.assertEquals(stringSerializer.deserializeFromDirectMemoryObject(pointer, 7), OBJECT);
-    } finally {
-      pointer.free();
-    }
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(stream.length).order(ByteOrder.nativeOrder());
+    byteBuffer.put(stream);
+
+    Assert.assertEquals(stringSerializer.deserializeFromByteBufferObject(byteBuffer, 7), OBJECT);
+
   }
 }

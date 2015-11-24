@@ -20,6 +20,7 @@
 package com.orientechnologies.orient.core.serialization.serializer.stream;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
 import com.orientechnologies.common.serialization.types.OBinarySerializer;
@@ -42,12 +43,12 @@ import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALCh
  * Serializer of OIndexRIDContainer for back-compatibility with v1.6.1.
  */
 public class OStreamSerializerOldRIDContainer implements OStreamSerializer, OBinarySerializer<OIndexRIDContainer> {
-  public static final String                            NAME     = "ic";
-  public static final OStreamSerializerOldRIDContainer  INSTANCE = new OStreamSerializerOldRIDContainer();
+  public static final  String                           NAME     = "ic";
+  public static final  OStreamSerializerOldRIDContainer INSTANCE = new OStreamSerializerOldRIDContainer();
   private static final ORecordSerializerSchemaAware2CSV FORMAT   = (ORecordSerializerSchemaAware2CSV) ORecordSerializerFactory
-                                                                     .instance().getFormat(ORecordSerializerSchemaAware2CSV.NAME);
+      .instance().getFormat(ORecordSerializerSchemaAware2CSV.NAME);
 
-  public static final byte                              ID       = 20;
+  public static final byte ID = 20;
 
   public Object fromStream(final byte[] iStream) throws IOException {
     if (iStream == null)
@@ -146,6 +147,12 @@ public class OStreamSerializerOldRIDContainer implements OStreamSerializer, OBin
   }
 
   @Override
+  public void serializeInByteBuffer(OIndexRIDContainer object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    final byte[] serializedSet = containerToStream(object);
+    OBinaryTypeSerializer.INSTANCE.serializeInByteBuffer(serializedSet, byteBuffer, offset);
+  }
+
+  @Override
   public OIndexRIDContainer deserializeFromDirectMemoryObject(ODirectMemoryPointer pointer, long offset) {
     final byte[] serializedSet = OBinaryTypeSerializer.INSTANCE.deserializeFromDirectMemoryObject(pointer, offset);
 
@@ -159,8 +166,21 @@ public class OStreamSerializerOldRIDContainer implements OStreamSerializer, OBin
   }
 
   @Override
-  public OIndexRIDContainer deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
-    final byte[] serializedSet = OBinaryTypeSerializer.INSTANCE.deserializeFromDirectMemoryObject(wrapper, offset);
+  public OIndexRIDContainer deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    final byte[] serializedSet = OBinaryTypeSerializer.INSTANCE.deserializeFromByteBufferObject(byteBuffer, offset);
+
+    final String s = OBinaryProtocol.bytes2string(serializedSet);
+
+    if (s.startsWith("<#@")) {
+      return containerFromStream(s);
+    }
+
+    return (OIndexRIDContainer) FORMAT.embeddedCollectionFromStream(null, OType.EMBEDDEDSET, null, OType.LINK, s);
+  }
+
+  @Override
+  public OIndexRIDContainer deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
+    final byte[] serializedSet = OBinaryTypeSerializer.INSTANCE.deserializeFromByteBufferObject(wrapper, offset);
 
     final String s = OBinaryProtocol.bytes2string(serializedSet);
 
@@ -177,8 +197,13 @@ public class OStreamSerializerOldRIDContainer implements OStreamSerializer, OBin
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
-    return OBinaryTypeSerializer.INSTANCE.getObjectSizeInDirectMemory(wrapper, offset);
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return OBinaryTypeSerializer.INSTANCE.getObjectSizeInByteBuffer(byteBuffer, offset);
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
+    return OBinaryTypeSerializer.INSTANCE.getObjectSizeInByteBuffer(wrapper, offset);
   }
 
   @Override
@@ -213,7 +238,8 @@ public class OStreamSerializerOldRIDContainer implements OStreamSerializer, OBin
     final String fileName = doc.field("file");
 
     final ODatabaseDocumentInternal db = ODatabaseRecordThreadLocal.INSTANCE.get();
-    return new OIndexRIDContainer(fileName, new OIndexRIDContainerSBTree(fileName, rootPointer, false,
-        (OAbstractPaginatedStorage) db.getStorage().getUnderlying()), false, false);
+    return new OIndexRIDContainer(fileName,
+        new OIndexRIDContainerSBTree(fileName, rootPointer, false, (OAbstractPaginatedStorage) db.getStorage().getUnderlying()),
+        false, false);
   }
 }

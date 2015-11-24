@@ -8,6 +8,7 @@ import java.util.TreeSet;
 
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
 import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
+import com.orientechnologies.orient.core.storage.cache.OPageCacheByteBuffersPool;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -27,9 +28,8 @@ import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSe
 @Test
 public class SBTreeLeafBucketTest {
   public void testInitialization() throws Exception {
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(
-        OSBTreeBucket.MAX_PAGE_SIZE_BYTES + ODurablePage.PAGE_PADDING);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(OSBTreeBucket.MAX_PAGE_SIZE_BYTES);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
@@ -59,9 +59,8 @@ public class SBTreeLeafBucketTest {
       keys.add(random.nextLong());
     }
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(
-        OSBTreeBucket.MAX_PAGE_SIZE_BYTES + ODurablePage.PAGE_PADDING);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(OSBTreeBucket.MAX_PAGE_SIZE_BYTES);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
 
     cachePointer.incrementReferrer();
@@ -100,9 +99,8 @@ public class SBTreeLeafBucketTest {
       keys.add(random.nextLong());
     }
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(
-        OSBTreeBucket.MAX_PAGE_SIZE_BYTES + ODurablePage.PAGE_PADDING);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(OSBTreeBucket.MAX_PAGE_SIZE_BYTES);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
 
     cachePointer.incrementReferrer();
@@ -148,9 +146,8 @@ public class SBTreeLeafBucketTest {
       keys.add(random.nextLong());
     }
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(
-        OSBTreeBucket.MAX_PAGE_SIZE_BYTES + ODurablePage.PAGE_PADDING);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(OSBTreeBucket.MAX_PAGE_SIZE_BYTES);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
@@ -225,9 +222,8 @@ public class SBTreeLeafBucketTest {
       keys.add(random.nextLong());
     }
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(
-        OSBTreeBucket.MAX_PAGE_SIZE_BYTES + ODurablePage.PAGE_PADDING);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(OSBTreeBucket.MAX_PAGE_SIZE_BYTES);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
@@ -296,9 +292,8 @@ public class SBTreeLeafBucketTest {
   }
 
   public void testSetLeftSibling() throws Exception {
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(
-        OSBTreeBucket.MAX_PAGE_SIZE_BYTES + ODurablePage.PAGE_PADDING);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(OSBTreeBucket.MAX_PAGE_SIZE_BYTES);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);
@@ -312,9 +307,8 @@ public class SBTreeLeafBucketTest {
   }
 
   public void testSetRightSibling() throws Exception {
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(
-        OSBTreeBucket.MAX_PAGE_SIZE_BYTES + ODurablePage.PAGE_PADDING);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(OSBTreeBucket.MAX_PAGE_SIZE_BYTES);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);

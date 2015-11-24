@@ -22,17 +22,20 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 /**
  * @author Ilya Bershadskiy (ibersh20-at-gmail.com)
  * @since 18.01.12
  */
 @Test
 public class BooleanSerializerTest {
-  private static final int     FIELD_SIZE   = 1;
-  byte[]                       stream       = new byte[FIELD_SIZE];
+  private static final int FIELD_SIZE = 1;
+  byte[] stream = new byte[FIELD_SIZE];
   private static final Boolean OBJECT_TRUE  = true;
   private static final Boolean OBJECT_FALSE = false;
-  private OBooleanSerializer   booleanSerializer;
+  private OBooleanSerializer booleanSerializer;
 
   @BeforeClass
   public void beforeClass() {
@@ -60,19 +63,14 @@ public class BooleanSerializerTest {
   public void testNativeDirectMemoryCompatibility() {
     booleanSerializer.serializeNative(OBJECT_TRUE, stream, 0);
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(stream);
-    try {
-      Assert.assertEquals(booleanSerializer.deserializeFromDirectMemoryObject(pointer, 0), OBJECT_TRUE);
-    } finally {
-      pointer.free();
-    }
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(stream.length).order(ByteOrder.nativeOrder());
+    byteBuffer.put(stream);
+
+    Assert.assertEquals(booleanSerializer.deserializeFromByteBufferObject(byteBuffer, 0), OBJECT_TRUE);
 
     booleanSerializer.serializeNative(OBJECT_FALSE, stream, 0);
-    pointer = ODirectMemoryPointerFactory.instance().createPointer(stream);
-    try {
-      Assert.assertEquals(booleanSerializer.deserializeFromDirectMemoryObject(pointer, 0), OBJECT_FALSE);
-    } finally {
-      pointer.free();
-    }
+    byteBuffer = ByteBuffer.allocateDirect(stream.length).order(ByteOrder.nativeOrder());
+    byteBuffer.put(stream);
+    Assert.assertEquals(booleanSerializer.deserializeFromByteBufferObject(byteBuffer, 0), OBJECT_FALSE);
   }
 }

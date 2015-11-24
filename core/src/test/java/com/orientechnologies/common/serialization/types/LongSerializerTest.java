@@ -22,6 +22,9 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 /**
  * @author Ilya Bershadskiy (ibersh20-at-gmail.com)
  * @since 18.01.12
@@ -30,8 +33,8 @@ import org.testng.annotations.Test;
 public class LongSerializerTest {
   private static final int  FIELD_SIZE = 8;
   private static final Long OBJECT     = 999999999999999999L;
-  private OLongSerializer   longSerializer;
-  byte[]                    stream     = new byte[FIELD_SIZE];
+  private OLongSerializer longSerializer;
+  byte[] stream = new byte[FIELD_SIZE];
 
   @BeforeClass
   public void beforeClass() {
@@ -55,12 +58,10 @@ public class LongSerializerTest {
   public void testNativeDirectMemoryCompatibility() {
     longSerializer.serializeNative(OBJECT, stream, 0);
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(stream);
-    try {
-      Assert.assertEquals(longSerializer.deserializeFromDirectMemoryObject(pointer, 0), OBJECT);
-    } finally {
-      pointer.free();
-    }
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(stream.length).order(ByteOrder.nativeOrder());
+    byteBuffer.put(stream);
+
+    Assert.assertEquals(longSerializer.deserializeFromByteBufferObject(byteBuffer, 0), OBJECT);
 
   }
 }

@@ -32,7 +32,6 @@ import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALCh
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -136,7 +135,7 @@ public class OHashIndexBucket<K, V> extends ODurablePage implements Iterable<OHa
     entryPosition += OLongSerializer.LONG_SIZE;
 
     final K key = deserializeFromDirectMemory(keySerializer, entryPosition);
-    entryPosition += getObjectSizeInDirectMemory(keySerializer, entryPosition);
+    entryPosition += getObjectSizeInByteBuffer(keySerializer, entryPosition);
 
     final V value = deserializeFromDirectMemory(valueSerializer, entryPosition);
     return new Entry<K, V>(key, value, hashCode);
@@ -183,10 +182,10 @@ public class OHashIndexBucket<K, V> extends ODurablePage implements Iterable<OHa
   public int updateEntry(int index, V value) throws IOException {
     int entryPosition = getIntValue(POSITIONS_ARRAY_OFFSET + index * OIntegerSerializer.INT_SIZE);
     entryPosition += OLongSerializer.LONG_SIZE;
-    entryPosition += getObjectSizeInDirectMemory(keySerializer, entryPosition);
+    entryPosition += getObjectSizeInByteBuffer(keySerializer, entryPosition);
 
     final int newSize = valueSerializer.getObjectSize(value);
-    final int oldSize = getObjectSizeInDirectMemory(valueSerializer, entryPosition);
+    final int oldSize = getObjectSizeInByteBuffer(valueSerializer, entryPosition);
     if (newSize != oldSize)
       return -1;
 
@@ -210,8 +209,8 @@ public class OHashIndexBucket<K, V> extends ODurablePage implements Iterable<OHa
     final int positionOffset = POSITIONS_ARRAY_OFFSET + index * OIntegerSerializer.INT_SIZE;
     final int entryPosition = getIntValue(positionOffset);
 
-    final int keySize = getObjectSizeInDirectMemory(keySerializer, entryPosition + OLongSerializer.LONG_SIZE);
-    final int ridSize = getObjectSizeInDirectMemory(valueSerializer, entryPosition + keySize + OLongSerializer.LONG_SIZE);
+    final int keySize = getObjectSizeInByteBuffer(keySerializer, entryPosition + OLongSerializer.LONG_SIZE);
+    final int ridSize = getObjectSizeInByteBuffer(valueSerializer, entryPosition + keySize + OLongSerializer.LONG_SIZE);
     final int entrySize = keySize + ridSize + OLongSerializer.LONG_SIZE;
 
     moveData(positionOffset + OIntegerSerializer.INT_SIZE, positionOffset, size() * OIntegerSerializer.INT_SIZE - (index + 1)

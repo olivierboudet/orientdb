@@ -464,7 +464,7 @@ public enum OGlobalConfiguration {
 
   QUERY_SCAN_PREFETCH_PAGES("query.scanPrefetchPages",
       "Pages to prefetch during scan. Setting this value higher makes scans faster, because it reduces the number of I/O operations, though it consumes more memory. (Use 0 to disable)",
-      Integer.class, 20),
+      Integer.class, 0),
 
   QUERY_SCAN_BATCH_SIZE("query.scanBatchSize",
       "Scan clusters in blocks of records. This setting reduces the lock time on the cluster during scans. A high value mean a faster execution, but also a lower concurrency level. Set to 0 to disable batch scanning. Disabling batch scanning is suggested for read-only databases only",

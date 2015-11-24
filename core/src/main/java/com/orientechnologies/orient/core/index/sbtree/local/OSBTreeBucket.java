@@ -146,7 +146,7 @@ public class OSBTreeBucket<K, V> extends ODurablePage {
 
   public long remove(int entryIndex) throws IOException {
     int entryPosition = getIntValue(POSITIONS_ARRAY_OFFSET + entryIndex * OIntegerSerializer.INT_SIZE);
-    int keySize = getObjectSizeInDirectMemory(keySerializer, entryPosition);
+    int keySize = getObjectSizeInByteBuffer(keySerializer, entryPosition);
 
     int entrySize;
     long linkValue = -1;
@@ -158,7 +158,7 @@ public class OSBTreeBucket<K, V> extends ODurablePage {
         final boolean isLink = getByteValue(entryPosition + keySize) > 0;
 
         if (!isLink)
-          entrySize = keySize + getObjectSizeInDirectMemory(valueSerializer, entryPosition + keySize + OByteSerializer.BYTE_SIZE)
+          entrySize = keySize + getObjectSizeInByteBuffer(valueSerializer, entryPosition + keySize + OByteSerializer.BYTE_SIZE)
               + OByteSerializer.BYTE_SIZE;
         else {
           entrySize = keySize + OByteSerializer.BYTE_SIZE + OLongSerializer.LONG_SIZE;
@@ -205,7 +205,7 @@ public class OSBTreeBucket<K, V> extends ODurablePage {
 
     if (isLeaf) {
       K key = deserializeFromDirectMemory(keySerializer, entryPosition);
-      entryPosition += getObjectSizeInDirectMemory(keySerializer, entryPosition);
+      entryPosition += getObjectSizeInByteBuffer(keySerializer, entryPosition);
 
       boolean isLinkValue = getByteValue(entryPosition) > 0;
       long link = -1;
@@ -342,7 +342,7 @@ public class OSBTreeBucket<K, V> extends ODurablePage {
 
   public int updateValue(int index, OSBTreeValue<V> value) throws IOException {
     int entryPosition = getIntValue(index * OIntegerSerializer.INT_SIZE + POSITIONS_ARRAY_OFFSET);
-    entryPosition += getObjectSizeInDirectMemory(keySerializer, entryPosition);
+    entryPosition += getObjectSizeInByteBuffer(keySerializer, entryPosition);
     boolean isLinkValue = getByteValue(entryPosition) > 0;
 
     entryPosition += OByteSerializer.BYTE_SIZE;
@@ -357,7 +357,7 @@ public class OSBTreeBucket<K, V> extends ODurablePage {
     if (isLinkValue)
       oldSize = OLongSerializer.LONG_SIZE;
     else
-      oldSize = getObjectSizeInDirectMemory(valueSerializer, entryPosition);
+      oldSize = getObjectSizeInByteBuffer(valueSerializer, entryPosition);
 
     if (newSize != oldSize)
       return -1;

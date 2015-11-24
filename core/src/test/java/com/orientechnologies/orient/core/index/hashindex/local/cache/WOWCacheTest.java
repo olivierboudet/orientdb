@@ -2,6 +2,7 @@ package com.orientechnologies.orient.core.index.hashindex.local.cache;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.zip.CRC32;
 
@@ -113,7 +114,11 @@ public class WOWCacheTest {
 
       final OCachePointer cachePointer = wowCache.load(fileId, i, true);
       cachePointer.acquireExclusiveLock();
-      cachePointer.getDataPointer().set(systemOffset + OWOWCache.PAGE_PADDING, data, 0, data.length);
+
+      ByteBuffer byteBuffer = cachePointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+      byteBuffer.put(data);
+
       cachePointer.releaseExclusiveLock();
 
       wowCache.store(fileId, i, cachePointer);
@@ -124,7 +129,12 @@ public class WOWCacheTest {
       byte[] dataOne = pageData[i];
 
       OCachePointer cachePointer = wowCache.load(fileId, i, false);
-      byte[] dataTwo = cachePointer.getDataPointer().get(systemOffset + OWOWCache.PAGE_PADDING, 8);
+      ByteBuffer byteBuffer = cachePointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+
+      byte[] dataTwo = new byte[8];
+      byteBuffer.get(dataTwo);
+
       cachePointer.decrementReferrer();
 
       Assert.assertEquals(dataTwo, dataOne);
@@ -154,7 +164,11 @@ public class WOWCacheTest {
 
       final OCachePointer cachePointer = wowCache.load(fileId, pageIndex, true);
       cachePointer.acquireExclusiveLock();
-      cachePointer.getDataPointer().set(systemOffset + OWOWCache.PAGE_PADDING, data, 0, data.length);
+
+      ByteBuffer byteBuffer = cachePointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+      byteBuffer.put(data);
+
       cachePointer.releaseExclusiveLock();
 
       wowCache.store(fileId, pageIndex, cachePointer);
@@ -166,7 +180,11 @@ public class WOWCacheTest {
       byte[] dataOne = entry.getValue();
 
       OCachePointer cachePointer = wowCache.load(fileId, pageIndex, false);
-      byte[] dataTwo = cachePointer.getDataPointer().get(systemOffset + OWOWCache.PAGE_PADDING, 8);
+
+      byte[] dataTwo = new byte[8];
+      ByteBuffer byteBuffer = cachePointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+      byteBuffer.get(dataTwo);
 
       cachePointer.decrementReferrer();
       Assert.assertEquals(dataTwo, dataOne);
@@ -186,7 +204,12 @@ public class WOWCacheTest {
       final OCachePointer cachePointer = wowCache.load(fileId, pageIndex, true);
 
       cachePointer.acquireExclusiveLock();
-      cachePointer.getDataPointer().set(systemOffset + OWOWCache.PAGE_PADDING, data, 0, data.length);
+
+      ByteBuffer byteBuffer = cachePointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+      byteBuffer.put(data);
+
+
       cachePointer.releaseExclusiveLock();
 
       wowCache.store(fileId, pageIndex, cachePointer);
@@ -197,7 +220,12 @@ public class WOWCacheTest {
       long pageIndex = entry.getKey();
       byte[] dataOne = entry.getValue();
       OCachePointer cachePointer = wowCache.load(fileId, pageIndex, false);
-      byte[] dataTwo = cachePointer.getDataPointer().get(systemOffset + OWOWCache.PAGE_PADDING, 8);
+      ByteBuffer byteBuffer = cachePointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+
+      byte[] dataTwo = new byte[8];
+      byteBuffer.get(dataTwo);
+
       cachePointer.decrementReferrer();
 
       Assert.assertEquals(dataTwo, dataOne);
@@ -225,7 +253,11 @@ public class WOWCacheTest {
 
       final OCachePointer cachePointer = wowCache.load(fileId, i, true);
       cachePointer.acquireExclusiveLock();
-      cachePointer.getDataPointer().set(systemOffset + OWOWCache.PAGE_PADDING, data, 0, data.length);
+
+      ByteBuffer byteBuffer = cachePointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+      byteBuffer.put(data);
+
       cachePointer.releaseExclusiveLock();
 
       wowCache.store(fileId, i, cachePointer);
@@ -236,7 +268,12 @@ public class WOWCacheTest {
       byte[] dataOne = pageData[i];
 
       OCachePointer cachePointer = wowCache.load(fileId, i, false);
-      byte[] dataTwo = cachePointer.getDataPointer().get(systemOffset + OWOWCache.PAGE_PADDING, 8);
+      ByteBuffer byteBuffer = cachePointer.getByteBuffer();
+      byteBuffer.position(systemOffset);
+
+      byte[] dataTwo = new byte[8];
+      byteBuffer.get(dataTwo);
+
       cachePointer.decrementReferrer();
 
       Assert.assertEquals(dataTwo, dataOne);

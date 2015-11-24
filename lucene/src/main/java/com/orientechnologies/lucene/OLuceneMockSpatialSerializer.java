@@ -23,11 +23,12 @@ import com.orientechnologies.common.serialization.types.OBinarySerializer;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
+
 /**
  * Created by Enrico Risa on 04/09/15.
  */
 public class OLuceneMockSpatialSerializer implements OBinarySerializer<ODocument> {
-
 
   static OLuceneMockSpatialSerializer INSTANCE = new OLuceneMockSpatialSerializer();
 
@@ -76,6 +77,21 @@ public class OLuceneMockSpatialSerializer implements OBinarySerializer<ODocument
   }
 
   @Override
+  public ODocument deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    return null;
+  }
+
+  @Override
+  public void serializeInByteBuffer(ODocument object, ByteBuffer byteBuffer, int offset, Object... hints) {
+
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return 0;
+  }
+
+  @Override
   public ODocument deserializeNativeObject(byte[] stream, int startPosition) {
     return null;
   }
@@ -101,12 +117,12 @@ public class OLuceneMockSpatialSerializer implements OBinarySerializer<ODocument
   }
 
   @Override
-  public ODocument deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public ODocument deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return null;
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return 0;
   }
 

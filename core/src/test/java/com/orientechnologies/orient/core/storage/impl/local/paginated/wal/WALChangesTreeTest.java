@@ -6,6 +6,9 @@ import com.orientechnologies.common.util.MersenneTwisterFast;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 @Test
 public class WALChangesTreeTest {
   public void testOneAdd() {
@@ -38,11 +41,10 @@ public class WALChangesTreeTest {
 
     tree.add(new byte[] { 10, 20, 30 }, 10);
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(20);
-    tree.applyChanges(pointer);
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(20).order(ByteOrder.nativeOrder());
+    tree.applyChanges(byteBuffer);
 
-    Assert.assertEquals(pointer.get(10, 3), new byte[] { 10, 20, 30 });
-    pointer.free();
+    Assert.assertEquals(getBytes(byteBuffer, 10, 3), new byte[] { 10, 20, 30 });
   }
 
   public void testAddOverlappedVersions() {
@@ -65,11 +67,10 @@ public class WALChangesTreeTest {
     tree.add(new byte[] { 35, 30 }, 11);
     tree.add(new byte[] { 10, 20 }, 10);
 
-    final ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(20);
-    tree.applyChanges(pointer);
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(20).order(ByteOrder.nativeOrder());
+    tree.applyChanges(byteBuffer);
 
-    Assert.assertEquals(pointer.get(10, 3), new byte[] { 10, 20, 30 });
-    pointer.free();
+    Assert.assertEquals(getBytes(byteBuffer, 10, 3), new byte[] { 10, 20, 30 });
   }
 
   public void testAddOverlappedVersionsTwo() {
@@ -94,11 +95,10 @@ public class WALChangesTreeTest {
     tree.add(new byte[] { 33, 34, 35, }, 3);
     tree.add(new byte[] { 22, 23, 24, 25, 26 }, 2);
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(20);
-    tree.applyChanges(pointer);
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(20).order(ByteOrder.nativeOrder());
+    tree.applyChanges(byteBuffer);
 
-    Assert.assertEquals(pointer.get(1, 6), new byte[] { 11, 22, 23, 24, 25, 26 });
-    pointer.free();
+    Assert.assertEquals(getBytes(byteBuffer, 1, 6), new byte[] { 11, 22, 23, 24, 25, 26 });
   }
 
   public void testInsertCaseThree() {
@@ -134,15 +134,13 @@ public class WALChangesTreeTest {
     tree.add(new byte[] { 15 }, 15);
     tree.add(new byte[] { 2 }, 2);
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(20);
-    tree.applyChanges(pointer);
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(20).order(ByteOrder.nativeOrder());
+    tree.applyChanges(byteBuffer);
 
-    Assert.assertEquals(pointer.get(10, 1), new byte[] { 10 });
-    Assert.assertEquals(pointer.get(5, 1), new byte[] { 5 });
-    Assert.assertEquals(pointer.get(15, 1), new byte[] { 15 });
-    Assert.assertEquals(pointer.get(2, 1), new byte[] { 2 });
-
-    pointer.free();
+    Assert.assertEquals(getBytes(byteBuffer, 10, 1), new byte[] { 10 });
+    Assert.assertEquals(getBytes(byteBuffer, 5, 1), new byte[] { 5 });
+    Assert.assertEquals(getBytes(byteBuffer, 15, 1), new byte[] { 15 });
+    Assert.assertEquals(getBytes(byteBuffer, 2, 1), new byte[] { 2 });
   }
 
   public void testInsertCase4and5() {
@@ -185,16 +183,14 @@ public class WALChangesTreeTest {
     tree.add(new byte[] { 30 }, 30);
     tree.add(new byte[] { 35 }, 35);
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(80);
-    tree.applyChanges(pointer);
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(80).order(ByteOrder.nativeOrder());
+    tree.applyChanges(byteBuffer);
 
-    Assert.assertEquals(pointer.get(50, 1), new byte[] { 50 });
-    Assert.assertEquals(pointer.get(60, 1), new byte[] { 60 });
-    Assert.assertEquals(pointer.get(40, 1), new byte[] { 40 });
-    Assert.assertEquals(pointer.get(30, 1), new byte[] { 30 });
-    Assert.assertEquals(pointer.get(35, 1), new byte[] { 35 });
-
-    pointer.free();
+    Assert.assertEquals(getBytes(byteBuffer, 50, 1), new byte[] { 50 });
+    Assert.assertEquals(getBytes(byteBuffer, 60, 1), new byte[] { 60 });
+    Assert.assertEquals(getBytes(byteBuffer, 40, 1), new byte[] { 40 });
+    Assert.assertEquals(getBytes(byteBuffer, 30, 1), new byte[] { 30 });
+    Assert.assertEquals(getBytes(byteBuffer, 35, 1), new byte[] { 35 });
   }
 
   public void testInsertRandom() {
@@ -279,10 +275,17 @@ public class WALChangesTreeTest {
       tree.add(value, cstart);
     }
 
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(new byte[30]);
-    tree.applyChanges(pointer);
-    Assert.assertEquals(pointer.get(0, 30), data);
-    pointer.free();
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(30).order(ByteOrder.nativeOrder());
+    tree.applyChanges(byteBuffer);
+    Assert.assertEquals(getBytes(byteBuffer, 0, 30), data);
+  }
+
+  private byte[] getBytes(ByteBuffer byteBuffer, int position, int len) {
+    final byte[] result = new byte[len];
+    byteBuffer.position(position);
+    byteBuffer.get(result);
+
+    return result;
   }
 
 }

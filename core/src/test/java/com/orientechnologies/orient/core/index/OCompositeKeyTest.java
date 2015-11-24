@@ -6,6 +6,9 @@ import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.serialization.serializer.binary.impl.index.OCompositeKeySerializer;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import static org.testng.Assert.*;
 
 @Test
@@ -245,14 +248,12 @@ public class OCompositeKeyTest {
     compositeKeyOne.addKey(2);
 
     int len = OCompositeKeySerializer.INSTANCE.getObjectSize(compositeKeyOne);
-    ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(len);
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(len).order(ByteOrder.nativeOrder());
 
-    OCompositeKeySerializer.INSTANCE.serializeInDirectMemoryObject(compositeKeyOne, directMemoryPointer, 0);
-
-    final OCompositeKey compositeKeyTwo = OCompositeKeySerializer.INSTANCE.deserializeFromDirectMemoryObject(directMemoryPointer, 0);
+    OCompositeKeySerializer.INSTANCE.serializeInByteBuffer(compositeKeyOne, byteBuffer, 0);
+    final OCompositeKey compositeKeyTwo = OCompositeKeySerializer.INSTANCE.deserializeFromByteBufferObject(byteBuffer, 0);
 
     assertEquals(compositeKeyOne, compositeKeyTwo);
     assertNotSame(compositeKeyOne, compositeKeyTwo);
-    directMemoryPointer.free();
   }
 }

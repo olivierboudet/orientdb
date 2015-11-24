@@ -33,6 +33,7 @@ import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 @Test(groups = { "index" })
@@ -141,13 +142,32 @@ public class IndexCustomKeyTest extends DocumentDBBaseTest {
     }
 
     @Override
+    public void serializeInByteBuffer(ComparableBinary object, ByteBuffer byteBuffer, int offset, Object... hints) {
+      final byte[] buffer = object.toByteArray();
+      byteBuffer.position(offset);
+      byteBuffer.put(buffer);
+    }
+
+    public ComparableBinary deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+      byteBuffer.position(offset);
+      byte[] data = new byte[LENGTH];
+      byteBuffer.get(data);
+      return new ComparableBinary(data);
+    }
+
+    @Override
+    public ComparableBinary deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
+      return new ComparableBinary(wrapper.get(offset, LENGTH));
+    }
+
+    @Override
     public ComparableBinary deserializeFromDirectMemoryObject(ODirectMemoryPointer pointer, long offset) {
       return new ComparableBinary(pointer.get(offset, LENGTH));
     }
 
     @Override
-    public ComparableBinary deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
-      return new ComparableBinary(wrapper.get(offset, LENGTH));
+    public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+      return LENGTH;
     }
 
     @Override
@@ -156,7 +176,7 @@ public class IndexCustomKeyTest extends DocumentDBBaseTest {
     }
 
     @Override
-    public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+    public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
       return LENGTH;
     }
 
@@ -208,13 +228,13 @@ public class IndexCustomKeyTest extends DocumentDBBaseTest {
 
   public void testUsage() {
     OIndex<?> index = getIndex();
-    ComparableBinary key1 = new ComparableBinary(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
-        3, 4, 5, 6, 7, 8, 9, 0, 1 });
+    ComparableBinary key1 = new ComparableBinary(
+        new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1 });
     ODocument doc1 = new ODocument().field("k", "key1");
     index.put(key1, doc1);
 
-    ComparableBinary key2 = new ComparableBinary(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
-        3, 4, 5, 6, 7, 8, 9, 0, 2 });
+    ComparableBinary key2 = new ComparableBinary(
+        new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 2 });
     ODocument doc2 = new ODocument().field("k", "key1");
     index.put(key2, doc2);
 
@@ -225,15 +245,15 @@ public class IndexCustomKeyTest extends DocumentDBBaseTest {
   public void testTransactionalUsageWorks() {
     database.begin(OTransaction.TXTYPE.OPTIMISTIC);
     // OIndex<?> index = getManualIndex();
-    ComparableBinary key3 = new ComparableBinary(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
-        3, 4, 5, 6, 7, 8, 9, 0, 3 });
+    ComparableBinary key3 = new ComparableBinary(
+        new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 3 });
     ODocument doc1 = new ODocument().field("k", "key3");
 
     final OIndex index = getIndex();
     index.put(key3, doc1);
 
-    ComparableBinary key4 = new ComparableBinary(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
-        3, 4, 5, 6, 7, 8, 9, 0, 4 });
+    ComparableBinary key4 = new ComparableBinary(
+        new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 4 });
     ODocument doc2 = new ODocument().field("k", "key4");
     index.put(key4, doc2);
 
@@ -247,13 +267,13 @@ public class IndexCustomKeyTest extends DocumentDBBaseTest {
   public void testTransactionalUsageBreaks1() {
     database.begin(OTransaction.TXTYPE.OPTIMISTIC);
     OIndex<?> index = getIndex();
-    ComparableBinary key5 = new ComparableBinary(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
-        3, 4, 5, 6, 7, 8, 9, 0, 5 });
+    ComparableBinary key5 = new ComparableBinary(
+        new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 5 });
     ODocument doc1 = new ODocument().field("k", "key5");
     index.put(key5, doc1);
 
-    ComparableBinary key6 = new ComparableBinary(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
-        3, 4, 5, 6, 7, 8, 9, 0, 6 });
+    ComparableBinary key6 = new ComparableBinary(
+        new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 6 });
     ODocument doc2 = new ODocument().field("k", "key6");
     index.put(key6, doc2);
 
@@ -267,13 +287,13 @@ public class IndexCustomKeyTest extends DocumentDBBaseTest {
   public void testTransactionalUsageBreaks2() {
     OIndex<?> index = getIndex();
     database.begin(OTransaction.TXTYPE.OPTIMISTIC);
-    ComparableBinary key7 = new ComparableBinary(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
-        3, 4, 5, 6, 7, 8, 9, 0, 7 });
+    ComparableBinary key7 = new ComparableBinary(
+        new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 7 });
     ODocument doc1 = new ODocument().field("k", "key7");
     index.put(key7, doc1);
 
-    ComparableBinary key8 = new ComparableBinary(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
-        3, 4, 5, 6, 7, 8, 9, 0, 8 });
+    ComparableBinary key8 = new ComparableBinary(
+        new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 8 });
     ODocument doc2 = new ODocument().field("k", "key8");
     index.put(key8, doc2);
 

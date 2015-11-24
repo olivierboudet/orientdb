@@ -23,6 +23,8 @@ package com.orientechnologies.common.serialization.types;
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
+
 /**
  * Serializer for {@link String} type.
  *
@@ -139,6 +141,29 @@ public class OStringSerializer implements OBinarySerializer<String> {
   }
 
   @Override
+  public void serializeInByteBuffer(String object, ByteBuffer byteBuffer, final int offset, Object... hints) {
+    int length = object.length();
+    byteBuffer.position(offset);
+    byteBuffer.putInt(length);
+
+    byte[] binaryData = new byte[length * 2];
+    char[] stringContent = new char[length];
+
+    object.getChars(0, length, stringContent, 0);
+
+    int counter = 0;
+    for (char character : stringContent) {
+      binaryData[counter] = (byte) character;
+      counter++;
+
+      binaryData[counter] = (byte) (character >>> 8);
+      counter++;
+    }
+
+    byteBuffer.put(binaryData);
+  }
+
+  @Override
   public String deserializeFromDirectMemoryObject(ODirectMemoryPointer pointer, long offset) {
     int len = pointer.getInt(offset);
 
@@ -154,7 +179,23 @@ public class OStringSerializer implements OBinarySerializer<String> {
   }
 
   @Override
-  public String deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public String deserializeFromByteBufferObject(ByteBuffer byteBuffer, final int offset) {
+    byteBuffer.position(offset);
+    int len = byteBuffer.getInt();
+
+    final char[] buffer = new char[len];
+
+    byte[] binaryData = new byte[buffer.length * 2];
+    byteBuffer.get(binaryData);
+
+    for (int i = 0; i < len; i++)
+      buffer[i] = (char) ((0xFF & binaryData[i << 1]) | ((0xFF & binaryData[(i << 1) + 1]) << 8));
+
+    return new String(buffer);
+  }
+
+  @Override
+  public String deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
     int len = wrapper.getInt(offset);
 
     final char[] buffer = new char[len];
@@ -174,7 +215,12 @@ public class OStringSerializer implements OBinarySerializer<String> {
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return byteBuffer.getInt(offset) * 2 + OIntegerSerializer.INT_SIZE;
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return wrapper.getInt(offset) * 2 + OIntegerSerializer.INT_SIZE;
   }
 

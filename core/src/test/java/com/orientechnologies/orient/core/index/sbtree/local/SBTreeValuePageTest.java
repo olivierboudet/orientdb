@@ -6,6 +6,7 @@ import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
 import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.cache.OCachePointer;
+import com.orientechnologies.orient.core.storage.cache.OPageCacheByteBuffersPool;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -19,9 +20,9 @@ import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODura
 @Test
 public class SBTreeValuePageTest {
   public void fillPageDataTest() throws Exception {
-    ODirectMemoryPointer pointerOne = ODirectMemoryPointerFactory.instance().createPointer(
-        ODurablePage.MAX_PAGE_SIZE_BYTES + ODurablePage.PAGE_PADDING);
-    OCachePointer cachePointerOne = new OCachePointer(pointerOne, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(ODurablePage.MAX_PAGE_SIZE_BYTES);
+    OCachePointer cachePointerOne = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
     cachePointerOne.incrementReferrer();
 
     OCacheEntry cacheEntryOne = new OCacheEntry(0, 0, cachePointerOne, false);
@@ -34,8 +35,8 @@ public class SBTreeValuePageTest {
     int offset = valuePageOne.fillBinaryContent(data, 0);
     Assert.assertEquals(offset, OSBTreeValuePage.MAX_BINARY_VALUE_SIZE);
 
-    ODirectMemoryPointer pointerTwo = ODirectMemoryPointerFactory.instance().createPointer(ODurablePage.MAX_PAGE_SIZE_BYTES);
-    OCachePointer cachePointerTwo = new OCachePointer(pointerTwo, new OLogSequenceNumber(0, 0), 0, 0);
+    OCachePointer cachePointerTwo = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
     cachePointerTwo.incrementReferrer();
 
     OCacheEntry cacheEntryTwo = new OCacheEntry(0, 0, cachePointerTwo, false);
@@ -62,9 +63,8 @@ public class SBTreeValuePageTest {
   }
 
   public void testFreeListPointer() throws Exception {
-    ODirectMemoryPointer pointer = ODirectMemoryPointerFactory.instance().createPointer(
-        ODurablePage.MAX_PAGE_SIZE_BYTES + ODurablePage.PAGE_PADDING);
-    OCachePointer cachePointer = new OCachePointer(pointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(ODurablePage.MAX_PAGE_SIZE_BYTES);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     cachePointer.incrementReferrer();
 
     OCacheEntry cacheEntry = new OCacheEntry(0, 0, cachePointer, false);

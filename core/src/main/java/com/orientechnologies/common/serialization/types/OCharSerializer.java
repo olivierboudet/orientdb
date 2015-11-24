@@ -25,6 +25,7 @@ import com.orientechnologies.common.serialization.OBinaryConverter;
 import com.orientechnologies.common.serialization.OBinaryConverterFactory;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChangesTree;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
@@ -112,7 +113,22 @@ public class OCharSerializer implements OBinarySerializer<Character> {
   }
 
   @Override
-  public Character deserializeFromDirectMemoryObject(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public Character deserializeFromByteBufferObject(ByteBuffer byteBuffer, int offset) {
+    return byteBuffer.getChar(offset);
+  }
+
+  @Override
+  public void serializeInByteBuffer(Character object, ByteBuffer byteBuffer, int offset, Object... hints) {
+    byteBuffer.putChar(offset, object);
+  }
+
+  @Override
+  public int getObjectSizeInByteBuffer(ByteBuffer byteBuffer, int offset) {
+    return CHAR_SIZE;
+  }
+
+  @Override
+  public Character deserializeFromByteBufferObject(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return (char) wrapper.getShort(offset);
   }
 
@@ -122,7 +138,7 @@ public class OCharSerializer implements OBinarySerializer<Character> {
   }
 
   @Override
-  public int getObjectSizeInDirectMemory(OWALChangesTree.PointerWrapper wrapper, long offset) {
+  public int getObjectSizeInByteBuffer(OWALChangesTree.BufferWrapper wrapper, int offset) {
     return CHAR_SIZE;
   }
 

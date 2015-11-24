@@ -4,6 +4,7 @@ import java.util.Iterator;
 
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
 import com.orientechnologies.common.directmemory.ODirectMemoryPointerFactory;
+import com.orientechnologies.orient.core.storage.cache.OPageCacheByteBuffersPool;
 import com.orientechnologies.orient.core.storage.cache.local.LRUList;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.cache.OCachePointer;
@@ -23,7 +24,8 @@ public abstract class LRUListTest {
   @Test
   public void testSingleAdd() {
     ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
-    OCachePointer cachePointer = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
+    OCachePointer cachePointer = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
     lruList.putToMRU(new OCacheEntry(1, 10, cachePointer, false));
 
     Iterator<OCacheEntry> entryIterator = lruList.iterator();
@@ -35,11 +37,12 @@ public abstract class LRUListTest {
 
   @Test
   public void testAddTwo() {
-    ODirectMemoryPointer directMemoryPointerOne = ODirectMemoryPointerFactory.instance().createPointer(1);
-    ODirectMemoryPointer directMemoryPointerTwo = ODirectMemoryPointerFactory.instance().createPointer(1);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
 
-    OCachePointer cachePointerOne = new OCachePointer(directMemoryPointerOne, new OLogSequenceNumber(0, 0), 0, 0);
-    OCachePointer cachePointerTwo = new OCachePointer(directMemoryPointerTwo, new OLogSequenceNumber(0, 0), 0, 0);
+    OCachePointer cachePointerOne = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
+    OCachePointer cachePointerTwo = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
 
     lruList.putToMRU(new OCacheEntry(1, 10, cachePointerOne, false));
     lruList.putToMRU(new OCacheEntry(1, 20, cachePointerTwo, false));
@@ -51,20 +54,18 @@ public abstract class LRUListTest {
 
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, 20, cachePointerTwo, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, 10, cachePointerOne, false));
-
-    directMemoryPointerOne.free();
-    directMemoryPointerTwo.free();
   }
 
   @Test
   public void testAddThree() {
-    ODirectMemoryPointer directMemoryPointerOne = ODirectMemoryPointerFactory.instance().createPointer(1);
-    ODirectMemoryPointer directMemoryPointerTwo = ODirectMemoryPointerFactory.instance().createPointer(1);
-    ODirectMemoryPointer directMemoryPointerThree = ODirectMemoryPointerFactory.instance().createPointer(1);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
 
-    OCachePointer cachePointerOne = new OCachePointer(directMemoryPointerOne, new OLogSequenceNumber(0, 0), 0, 0);
-    OCachePointer cachePointerTwo = new OCachePointer(directMemoryPointerTwo, new OLogSequenceNumber(0, 0), 0, 0);
-    OCachePointer cachePointerThree = new OCachePointer(directMemoryPointerThree, new OLogSequenceNumber(0, 0), 0, 0);
+    OCachePointer cachePointerOne = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
+    OCachePointer cachePointerTwo = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
+    OCachePointer cachePointerThree = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
 
     lruList.putToMRU(new OCacheEntry(1, 10, cachePointerOne, false));
     lruList.putToMRU(new OCacheEntry(1, 20, cachePointerTwo, false));
@@ -78,21 +79,18 @@ public abstract class LRUListTest {
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(3, 30, cachePointerThree, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, 20, cachePointerTwo, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, 10, cachePointerOne, false));
-
-    directMemoryPointerOne.free();
-    directMemoryPointerTwo.free();
-    directMemoryPointerThree.free();
   }
 
   @Test
   public void testAddThreePutMiddleToTop() {
-    ODirectMemoryPointer directMemoryPointerOne = ODirectMemoryPointerFactory.instance().createPointer(1);
-    ODirectMemoryPointer directMemoryPointerTwo = ODirectMemoryPointerFactory.instance().createPointer(1);
-    ODirectMemoryPointer directMemoryPointerThree = ODirectMemoryPointerFactory.instance().createPointer(1);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
 
-    OCachePointer cachePointerOne = new OCachePointer(directMemoryPointerOne, new OLogSequenceNumber(0, 0), 0, 0);
-    OCachePointer cachePointerTwo = new OCachePointer(directMemoryPointerTwo, new OLogSequenceNumber(0, 0), 0, 0);
-    OCachePointer cachePointerThree = new OCachePointer(directMemoryPointerThree, new OLogSequenceNumber(0, 0), 0, 0);
+    OCachePointer cachePointerOne = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
+    OCachePointer cachePointerTwo = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
+    OCachePointer cachePointerThree = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
 
     lruList.putToMRU(new OCacheEntry(1, 10, cachePointerOne, false));
     lruList.putToMRU(new OCacheEntry(1, 20, cachePointerTwo, false));
@@ -109,22 +107,20 @@ public abstract class LRUListTest {
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(3, 30, cachePointerThree, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, 10, cachePointerOne, false));
 
-    directMemoryPointerOne.free();
-    directMemoryPointerTwo.free();
-    directMemoryPointerThree.free();
   }
 
   @Test
   public void testAddThreePutMiddleToTopChangePointer() {
-    ODirectMemoryPointer directMemoryPointerOne = ODirectMemoryPointerFactory.instance().createPointer(1);
-    ODirectMemoryPointer directMemoryPointerTwo = ODirectMemoryPointerFactory.instance().createPointer(1);
-    ODirectMemoryPointer directMemoryPointerThree = ODirectMemoryPointerFactory.instance().createPointer(1);
-    ODirectMemoryPointer directMemoryPointerFour = ODirectMemoryPointerFactory.instance().createPointer(1);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
 
-    OCachePointer cachePointerOne = new OCachePointer(directMemoryPointerOne, new OLogSequenceNumber(0, 0), 0, 0);
-    OCachePointer cachePointerTwo = new OCachePointer(directMemoryPointerTwo, new OLogSequenceNumber(0, 0), 0, 0);
-    OCachePointer cachePointerThree = new OCachePointer(directMemoryPointerThree, new OLogSequenceNumber(0, 0), 0, 0);
-    OCachePointer cachePointerFour = new OCachePointer(directMemoryPointerFour, new OLogSequenceNumber(0, 0), 0, 0);
+    OCachePointer cachePointerOne = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
+    OCachePointer cachePointerTwo = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
+    OCachePointer cachePointerThree = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
+    OCachePointer cachePointerFour = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
 
     lruList.putToMRU(new OCacheEntry(1, 10, cachePointerOne, false));
     lruList.putToMRU(new OCacheEntry(1, 20, cachePointerTwo, false));
@@ -140,21 +136,15 @@ public abstract class LRUListTest {
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, 20, cachePointerFour, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(3, 30, cachePointerThree, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, 10, cachePointerOne, false));
-
-    directMemoryPointerOne.free();
-    directMemoryPointerTwo.free();
-    directMemoryPointerThree.free();
-    directMemoryPointerFour.free();
   }
 
   @Test
   public void testAddElevenPutMiddleToTopChangePointer() {
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
     OCachePointer[] cachePointers = new OCachePointer[11];
 
     for (int i = 0; i < 11; i++) {
-      ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
-
-      cachePointers[i] = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+      cachePointers[i] = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
       lruList.putToMRU(new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
 
@@ -174,17 +164,14 @@ public abstract class LRUListTest {
       Assert.assertTrue(entryIterator.hasNext());
       Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
-
-    for (int i = 0; i < 11; i++) {
-      cachePointers[i].getDataPointer().free();
-    }
   }
 
   @Test
   public void testAddOneRemoveLRU() {
-    ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
 
-    OCachePointer cachePointerOne = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OCachePointer cachePointerOne = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
     lruList.putToMRU(new OCacheEntry(1, 10, cachePointerOne, false));
     lruList.removeLRU();
 
@@ -192,15 +179,14 @@ public abstract class LRUListTest {
 
     Iterator<OCacheEntry> entryIterator = lruList.iterator();
     Assert.assertFalse(entryIterator.hasNext());
-
-    directMemoryPointer.free();
   }
 
   @Test
   public void testRemoveLRUShouldReturnNullIfAllRecordsAreUsed() {
-    ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
 
-    OCachePointer cachePointerOne = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+    OCachePointer cachePointerOne = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0,
+        0);
     OCacheEntry cacheEntry = new OCacheEntry(1, 10, cachePointerOne, false);
     lruList.putToMRU(cacheEntry);
     cacheEntry.incrementUsages();
@@ -208,18 +194,15 @@ public abstract class LRUListTest {
     OCacheEntry removedLRU = lruList.removeLRU();
 
     Assert.assertNull(removedLRU);
-
-    directMemoryPointer.free();
   }
 
   @Test
   public void testAddElevenRemoveLRU() {
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
     OCachePointer[] cachePointers = new OCachePointer[11];
 
     for (int i = 0; i < 11; i++) {
-      ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
-
-      cachePointers[i] = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+      cachePointers[i] = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
       lruList.putToMRU(new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
 
@@ -233,21 +216,15 @@ public abstract class LRUListTest {
       Assert.assertTrue(entryIterator.hasNext());
       Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
-
-    for (int i = 0; i < 11; i++) {
-      cachePointers[i].getDataPointer().free();
-    }
-
   }
 
   @Test
   public void testAddElevenRemoveMiddle() {
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
     OCachePointer[] cachePointers = new OCachePointer[11];
 
     for (int i = 0; i < 11; i++) {
-      ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
-
-      cachePointers[i] = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+      cachePointers[i] = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
       lruList.putToMRU(new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
 
@@ -264,20 +241,15 @@ public abstract class LRUListTest {
       Assert.assertTrue(entryIterator.hasNext());
       Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
-
-    for (int i = 0; i < 11; i++) {
-      cachePointers[i].getDataPointer().free();
-    }
   }
 
   @Test
   public void testAddElevenGetMiddle() {
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
     OCachePointer[] cachePointers = new OCachePointer[11];
 
     for (int i = 0; i < 11; i++) {
-      ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
-
-      cachePointers[i] = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+      cachePointers[i] = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
       lruList.putToMRU(new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
 
@@ -293,19 +265,15 @@ public abstract class LRUListTest {
       Assert.assertTrue(entryIterator.hasNext());
       Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
-
-    for (int i = 0; i < 11; i++) {
-      cachePointers[i].getDataPointer().free();
-    }
   }
 
   @Test
   public void testAdd9128() {
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
     OCachePointer[] cachePointers = new OCachePointer[9128];
 
     for (int i = 0; i < 9128; i++) {
-      ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
-      cachePointers[i] = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+      cachePointers[i] = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
       lruList.putToMRU(new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
 
@@ -316,18 +284,15 @@ public abstract class LRUListTest {
       Assert.assertTrue(entryIterator.hasNext());
       Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
-
-    for (OCachePointer cachePointer : cachePointers)
-      cachePointer.getDataPointer().free();
   }
 
   @Test
   public void testAdd9128Get() {
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
     OCachePointer[] cachePointers = new OCachePointer[9128];
 
     for (int i = 0; i < 9128; i++) {
-      ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
-      cachePointers[i] = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+      cachePointers[i] = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
       lruList.putToMRU(new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
 
@@ -341,18 +306,15 @@ public abstract class LRUListTest {
       Assert.assertTrue(entryIterator.hasNext());
       Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
-
-    for (OCachePointer cachePointer : cachePointers)
-      cachePointer.getDataPointer().free();
   }
 
   @Test
   public void testAdd9128Remove4564() {
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
     OCachePointer[] cachePointers = new OCachePointer[9128];
 
     for (int i = 0; i < 9128; i++) {
-      ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
-      cachePointers[i] = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+      cachePointers[i] = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
       lruList.putToMRU(new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
 
@@ -366,18 +328,15 @@ public abstract class LRUListTest {
       Assert.assertTrue(entryIterator.hasNext());
       Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
-
-    for (OCachePointer cachePointer : cachePointers)
-      cachePointer.getDataPointer().free();
   }
 
   @Test
   public void testAdd9128PutLastAndMiddleToTop() {
+    OPageCacheByteBuffersPool byteBuffersPool = new OPageCacheByteBuffersPool(1);
     OCachePointer[] cachePointers = new OCachePointer[9128];
 
     for (int i = 0; i < 9128; i++) {
-      ODirectMemoryPointer directMemoryPointer = ODirectMemoryPointerFactory.instance().createPointer(1);
-      cachePointers[i] = new OCachePointer(directMemoryPointer, new OLogSequenceNumber(0, 0), 0, 0);
+      cachePointers[i] = new OCachePointer(byteBuffersPool, byteBuffersPool.acquire(), new OLogSequenceNumber(0, 0), 0, 0);
       lruList.putToMRU(new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
 
@@ -398,8 +357,5 @@ public abstract class LRUListTest {
       Assert.assertTrue(entryIterator.hasNext());
       Assert.assertEquals(entryIterator.next(), new OCacheEntry(1, i * 10, cachePointers[i], false));
     }
-
-    for (OCachePointer cachePointer : cachePointers)
-      cachePointer.getDataPointer().free();
   }
 }

@@ -2766,13 +2766,13 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract impleme
         cacheEntry.acquireSharedLock();
         try {
           final OLogSequenceNumber pageLsn = ODurablePage
-              .getLogSequenceNumberFromPage(cacheEntry.getCachePointer().getDataPointer());
+              .getLogSequenceNumberFromPage(cacheEntry.getCachePointer().getByteBuffer());
 
           if (changeLsn == null || pageLsn.compareTo(changeLsn) > 0) {
 
             final byte[] data = new byte[pageSize + OLongSerializer.LONG_SIZE];
             OLongSerializer.INSTANCE.serializeNative(pageIndex, data, 0);
-            ODurablePage.getPageData(cacheEntry.getCachePointer().getDataPointer(), data, OLongSerializer.LONG_SIZE, pageSize);
+            ODurablePage.getPageData(cacheEntry.getCachePointer().getByteBuffer(), data, OLongSerializer.LONG_SIZE, pageSize);
 
             stream.write(data);
 
@@ -2950,19 +2950,22 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract impleme
 
           cacheEntry.acquireExclusiveLock();
           try {
-            final ODirectMemoryPointer pointer = cacheEntry.getCachePointer().getDataPointer();
+            final ByteBuffer byteBuffer = cacheEntry.getCachePointer().getByteBuffer();
             final OLogSequenceNumber backedUpPageLsn = ODurablePage.getLogSequenceNumber(OLongSerializer.LONG_SIZE, data);
             if (isFull) {
-              pointer.set(OWOWCache.PAGE_PADDING, data, OLongSerializer.LONG_SIZE, data.length - OLongSerializer.LONG_SIZE);
+              byteBuffer.position(0);
+              byteBuffer.put(data, OLongSerializer.LONG_SIZE, data.length - OLongSerializer.LONG_SIZE);
               cacheEntry.markDirty();
 
               if (maxLsn == null || maxLsn.compareTo(backedUpPageLsn) < 0) {
                 maxLsn = backedUpPageLsn;
               }
             } else {
-              final OLogSequenceNumber currentPageLsn = ODurablePage.getLogSequenceNumberFromPage(pointer);
+              final OLogSequenceNumber currentPageLsn = ODurablePage.getLogSequenceNumberFromPage(byteBuffer);
               if (backedUpPageLsn.compareTo(currentPageLsn) > 0) {
-                pointer.set(OWOWCache.PAGE_PADDING, data, OLongSerializer.LONG_SIZE, data.length - OLongSerializer.LONG_SIZE);
+                byteBuffer.position(0);
+                byteBuffer.put(data, OLongSerializer.LONG_SIZE, data.length - OLongSerializer.LONG_SIZE);
+
                 cacheEntry.markDirty();
 
                 if (maxLsn == null || maxLsn.compareTo(backedUpPageLsn) < 0) {
