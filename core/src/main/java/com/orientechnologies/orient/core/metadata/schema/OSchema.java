@@ -127,4 +127,9 @@ public interface OSchema {
    * IMPORTANT! Only for internal usage.
    */
   void setFullCheckpointOnChange(boolean fullCheckpointOnChange);
+
+  /**
+   * Callback invoked when the schema is loaded, after all the initializations.
+   */
+  void onPostIndexManagement();
 }

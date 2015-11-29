@@ -19,16 +19,6 @@
  */
 package com.orientechnologies.orient.core.index;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
 import com.orientechnologies.common.listener.OProgressListener;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.common.util.OMultiKey;
@@ -43,6 +33,7 @@ import com.orientechnologies.orient.core.db.record.ORecordElement;
 import com.orientechnologies.orient.core.db.record.OTrackedSet;
 import com.orientechnologies.orient.core.id.ORecordId;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
+import com.orientechnologies.orient.core.metadata.schema.OClassImpl;
 import com.orientechnologies.orient.core.metadata.schema.OSchemaShared;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.metadata.security.OSecurityNull;
@@ -50,6 +41,16 @@ import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.storage.OStorage;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Manages indexes at database level. A single instance is shared among multiple databases. Contentions are managed by r/w locks.
@@ -188,10 +189,29 @@ public class OIndexManagerShared extends OIndexManagerAbstract {
       releaseExclusiveLock();
     }
 
+    notifyInvolvedClasses(clusterIdsToIndex);
+
     if (OGlobalConfiguration.INDEX_FLUSH_AFTER_CREATE.getValueAsBoolean())
       storage.synch();
 
     return preProcessBeforeReturn(index);
+  }
+
+  protected void notifyInvolvedClasses(int[] clusterIdsToIndex) {
+    if (clusterIdsToIndex == null || clusterIdsToIndex.length == 0)
+      return;
+
+    final ODatabaseDocumentInternal database = getDatabase();
+
+    // UPDATE INVOLVED CLASSES
+    final Set<String> classes = new HashSet<String>();
+    for (int clusterId : clusterIdsToIndex) {
+      final OClass cls = database.getMetadata().getSchema().getClassByClusterId(clusterId);
+      if (cls != null && cls instanceof OClassImpl && !classes.contains(cls.getName())) {
+        ((OClassImpl) cls).onPostIndexManagement();
+        classes.add(cls.getName());
+      }
+    }
   }
 
   private Set<String> findClustersByIds(int[] clusterIdsToIndex, ODatabase database) {
@@ -223,16 +243,30 @@ public class OIndexManagerShared extends OIndexManagerAbstract {
     if (getDatabase().getTransaction().isActive())
       throw new IllegalStateException("Cannot drop an index inside a transaction");
 
+    int[] clusterIdsToIndex = null;
+
     acquireExclusiveLock();
     try {
       final Locale locale = getServerLocale();
       final OIndex<?> idx = indexes.remove(iIndexName.toLowerCase(locale));
       if (idx != null) {
+        final Set<String> clusters = idx.getClusters();
+        if (clusters != null && !clusters.isEmpty()) {
+          final ODatabaseDocumentInternal db = getDatabase();
+          clusterIdsToIndex = new int[clusters.size()];
+          int i = 0;
+          for (String cl : clusters) {
+            clusterIdsToIndex[i++] = db.getClusterIdByName(cl);
+          }
+        }
+
         removeClassPropertyIndex(idx);
 
         idx.delete();
         setDirty();
         save();
+
+        notifyInvolvedClasses(clusterIdsToIndex);
       }
 
     } finally {
