@@ -89,19 +89,6 @@ public class OLuceneIndexNotUnique extends OIndexAbstract<Set<OIdentifiable>> im
     return false;
   }
 
-  @Override
-  protected void onIndexEngineChange(int indexId) {
-
-    storage.callIndexEngine(false, false, indexId, new OIndexEngineCallback<Object>() {
-      @Override
-      public Object callEngine(OIndexEngine engine) {
-        OLuceneIndexEngine oIndexEngine = (OLuceneIndexEngine) engine;
-        oIndexEngine.initIndex(getName(), getType(), getDefinition(), isAutomatic(), getMetadata());
-        return null;
-      }
-    });
-  }
-
   protected Object encodeKey(Object key) {
     return key;
   }

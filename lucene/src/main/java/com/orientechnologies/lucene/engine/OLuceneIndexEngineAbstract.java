@@ -104,7 +104,7 @@ public abstract class OLuceneIndexEngineAbstract<V> extends OSharedResourceAdapt
 
   @Override
   public void create(OBinarySerializer valueSerializer, boolean isAutomatic, OType[] keyTypes, boolean nullPointerSupport,
-      OBinarySerializer keySerializer, int keySize) {
+                        OBinarySerializer keySerializer, int keySize, ODocument metadata) {
     // initIndex(indexName, null, isAutomatic, metadata);
   }
 
@@ -335,7 +335,7 @@ public abstract class OLuceneIndexEngineAbstract<V> extends OSharedResourceAdapt
   }
 
   @Override
-  public void initIndex(String indexName, String indexType, OIndexDefinition indexDefinition, boolean isAutomatic,
+  public void init(String indexName, String indexType, OIndexDefinition indexDefinition, boolean isAutomatic,
       ODocument metadata) {
 
     // FIXME how many timers are around?

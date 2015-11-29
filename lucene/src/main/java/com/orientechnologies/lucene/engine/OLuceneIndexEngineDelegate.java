@@ -62,18 +62,13 @@ public class OLuceneIndexEngineDelegate implements OLuceneIndexEngine {
   }
 
   @Override
-  public void init() {
-    delegate.init();
-  }
-
-  @Override
   public void flush() {
     delegate.flush();
   }
 
   @Override
   public void create(OBinarySerializer valueSerializer, boolean isAutomatic, OType[] keyTypes, boolean nullPointerSupport,
-      OBinarySerializer keySerializer, int keySize) {
+                        OBinarySerializer keySerializer, int keySize, ODocument metadata) {
   }
 
   @Override
@@ -190,7 +185,7 @@ public class OLuceneIndexEngineDelegate implements OLuceneIndexEngine {
   }
 
   @Override
-  public void initIndex(String indexName, String indexType, OIndexDefinition indexDefinition, boolean isAutomatic,
+  public void init(String indexName, String indexType, OIndexDefinition indexDefinition, boolean isAutomatic,
       ODocument metadata) {
     this.indexName = indexName;
 
@@ -206,7 +201,7 @@ public class OLuceneIndexEngineDelegate implements OLuceneIndexEngine {
         delegate = new OLuceneFullTextIndexEngine(indexName, new ODocBuilder(), new OQueryBuilderImpl());
       }
 
-      delegate.initIndex(indexName, indexType, indexDefinition, isAutomatic, metadata);
+      delegate.init(indexName, indexType, indexDefinition, isAutomatic, metadata);
     }
   }
 

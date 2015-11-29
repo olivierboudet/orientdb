@@ -19,6 +19,16 @@
  */
 package com.orientechnologies.orient.core.index;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import com.orientechnologies.common.listener.OProgressListener;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.common.util.OMultiKey;
@@ -40,16 +50,6 @@ import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.storage.OStorage;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Manages indexes at database level. A single instance is shared among multiple databases. Contentions are managed by r/w locks.
@@ -356,9 +356,8 @@ public class OIndexManagerShared extends OIndexManagerAbstract {
             final int indexVersion = d.field(OIndexInternal.INDEX_VERSION) == null ? 1
                 : (Integer) d.field(OIndexInternal.INDEX_VERSION);
 
-            OIndexInternal.IndexMetadata newIndexMetadata = OIndexAbstract.loadMetadataInternal(d,
-                (String) d.field(OIndexInternal.CONFIG_TYPE), (String) d.field(OIndexInternal.ALGORITHM),
-                d.<String> field(OIndexInternal.VALUE_CONTAINER_ALGORITHM));
+            OIndexMetadata newIndexMetadata = OIndexAbstract.loadMetadataInternal(d, (String) d.field(OIndexInternal.CONFIG_TYPE),
+                (String) d.field(OIndexInternal.ALGORITHM), d.<String> field(OIndexInternal.VALUE_CONTAINER_ALGORITHM));
 
             index = OIndexes.createIndex(getDatabase(), newIndexMetadata.getName(), newIndexMetadata.getType(),
                 newIndexMetadata.getAlgorithm(), newIndexMetadata.getValueContainerAlgorithm(),
@@ -368,7 +367,7 @@ public class OIndexManagerShared extends OIndexManagerAbstract {
 
             OIndex<?> oldIndex = oldIndexes.remove(normalizedName);
             if (oldIndex != null) {
-              OIndexInternal.IndexMetadata oldIndexMetadata = oldIndex.getInternal().loadMetadata(oldIndex.getConfiguration());
+              OIndexMetadata oldIndexMetadata = oldIndex.getInternal().loadMetadata(oldIndex.getConfiguration());
 
               if (!(oldIndexMetadata.equals(newIndexMetadata) || newIndexMetadata.getIndexDefinition() == null)) {
                 oldIndex.delete();
@@ -531,7 +530,7 @@ public class OIndexManagerShared extends OIndexManagerAbstract {
         }
       }
 
-      OIndexInternal.IndexMetadata indexMetadata = index.loadMetadata(idx);
+      OIndexMetadata indexMetadata = index.loadMetadata(idx);
       OIndexDefinition indexDefinition = indexMetadata.getIndexDefinition();
 
       if (indexDefinition != null && indexDefinition.isAutomatic()) {
@@ -541,7 +540,7 @@ public class OIndexManagerShared extends OIndexManagerAbstract {
       }
     }
 
-    private void createAutomaticIndex(ODocument idx, OIndexInternal<?> index, OIndexInternal.IndexMetadata indexMetadata,
+    private void createAutomaticIndex(ODocument idx, OIndexInternal<?> index, OIndexMetadata indexMetadata,
         OIndexDefinition indexDefinition) {
       final String indexName = indexMetadata.getName();
       final Set<String> clusters = indexMetadata.getClustersToIndex();
@@ -571,7 +570,7 @@ public class OIndexManagerShared extends OIndexManagerAbstract {
       }
     }
 
-    private void addIndexAsIs(ODocument idx, OIndexInternal<?> index, OIndexInternal.IndexMetadata indexMetadata) {
+    private void addIndexAsIs(ODocument idx, OIndexInternal<?> index, OIndexMetadata indexMetadata) {
       OLogManager.instance().info(this, "Index '%s' is not automatic index and will be added as is", indexMetadata.getName());
 
       if (index.loadFromConfiguration(idx)) {

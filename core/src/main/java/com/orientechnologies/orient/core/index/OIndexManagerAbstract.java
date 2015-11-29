@@ -29,7 +29,6 @@ import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.db.record.OIdentifiable;
 import com.orientechnologies.orient.core.dictionary.ODictionary;
 import com.orientechnologies.orient.core.exception.OConcurrentModificationException;
-import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.id.ORecordId;
 import com.orientechnologies.orient.core.metadata.OMetadata;
 import com.orientechnologies.orient.core.metadata.OMetadataDefault;
@@ -38,6 +37,7 @@ import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.impl.ODocument;
+import com.orientechnologies.orient.core.sharding.OAutoShardingIndexFactory;
 import com.orientechnologies.orient.core.storage.OStorage;
 import com.orientechnologies.orient.core.storage.OStorageProxy;
 import com.orientechnologies.orient.core.type.ODocumentWrapper;
@@ -56,18 +56,18 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @SuppressWarnings({ "unchecked", "serial" })
 public abstract class OIndexManagerAbstract extends ODocumentWrapperNoClass implements OIndexManager, OCloseable {
-  public static final String                                  CONFIG_INDEXES         = "indexes";
-  public static final String                                  DICTIONARY_NAME        = "dictionary";
+  public static final String CONFIG_INDEXES  = "indexes";
+  public static final String DICTIONARY_NAME = "dictionary";
 
   // values of this Map should be IMMUTABLE !! for thread safety reasons.
-  protected final Map<String, Map<OMultiKey, Set<OIndex<?>>>> classPropertyIndex     = new ConcurrentHashMap<String, Map<OMultiKey, Set<OIndex<?>>>>();
-  protected Map<String, OIndex<?>>                            indexes                = new ConcurrentHashMap<String, OIndex<?>>();
-  protected String                                            defaultClusterName     = OMetadataDefault.CLUSTER_INDEX_NAME;
-  protected String                                            manualClusterName      = OMetadataDefault.CLUSTER_MANUAL_INDEX_NAME;
+  protected final Map<String, Map<OMultiKey, Set<OIndex<?>>>> classPropertyIndex = new ConcurrentHashMap<String, Map<OMultiKey, Set<OIndex<?>>>>();
+  protected Map<String, OIndex<?>>                            indexes            = new ConcurrentHashMap<String, OIndex<?>>();
+  protected String                                            defaultClusterName = OMetadataDefault.CLUSTER_INDEX_NAME;
+  protected String                                            manualClusterName  = OMetadataDefault.CLUSTER_MANUAL_INDEX_NAME;
 
-  protected ReadWriteLock                                     lock                   = new ReentrantReadWriteLock();
+  protected ReadWriteLock lock = new ReentrantReadWriteLock();
 
-  private volatile boolean                                    fullCheckpointOnChange = false;
+  private volatile boolean fullCheckpointOnChange = false;
 
   public OIndexManagerAbstract(final ODatabaseDocument iDatabase) {
     super(new ODocument().setTrackingChanges(false));
@@ -162,8 +162,8 @@ public abstract class OIndexManagerAbstract extends ODocumentWrapperNoClass impl
       getDatabase().getStorage().getConfiguration().update();
 
       OIndexFactory factory = OIndexes.getFactory(OClass.INDEX_TYPE.DICTIONARY.toString(), null);
-      createIndex(DICTIONARY_NAME, OClass.INDEX_TYPE.DICTIONARY.toString(), new OSimpleKeyIndexDefinition(factory.getLastVersion(),
-          OType.STRING), null, null, null);
+      createIndex(DICTIONARY_NAME, OClass.INDEX_TYPE.DICTIONARY.toString(),
+          new OSimpleKeyIndexDefinition(factory.getLastVersion(), OType.STRING), null, null, null);
     } finally {
       releaseExclusiveLock();
     }
@@ -354,6 +354,21 @@ public abstract class OIndexManagerAbstract extends ODocumentWrapperNoClass impl
     if (index != null && index.getDefinition() != null && index.getDefinition().getClassName() != null
         && className.equals(index.getDefinition().getClassName().toLowerCase(locale)))
       return preProcessBeforeReturn(index);
+    return null;
+  }
+
+  @Override
+  public OIndex<?> getClassAutoShardingIndex(String className) {
+    final Locale locale = getServerLocale();
+    className = className.toLowerCase(locale);
+
+    // LOOK FOR INDEX
+    for (OIndex<?> index : indexes.values()) {
+      if (index != null && OAutoShardingIndexFactory.AUTOSHARDING_ALGORITHM.equals(index.getAlgorithm())
+          && index.getDefinition() != null && index.getDefinition().getClassName() != null
+          && className.equals(index.getDefinition().getClassName().toLowerCase(locale)))
+        return preProcessBeforeReturn(index);
+    }
     return null;
   }
 
