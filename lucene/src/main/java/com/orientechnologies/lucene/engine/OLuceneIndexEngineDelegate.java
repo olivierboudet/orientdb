@@ -40,6 +40,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * Created by Enrico Risa on 04/09/15.
@@ -68,7 +69,7 @@ public class OLuceneIndexEngineDelegate implements OLuceneIndexEngine {
 
   @Override
   public void create(OBinarySerializer valueSerializer, boolean isAutomatic, OType[] keyTypes, boolean nullPointerSupport,
-                        OBinarySerializer keySerializer, int keySize, ODocument metadata) {
+                        OBinarySerializer keySerializer, int keySize, Set<String> clustersToIndex, ODocument metadata) {
   }
 
   @Override

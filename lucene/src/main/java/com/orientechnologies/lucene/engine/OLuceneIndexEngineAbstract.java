@@ -104,7 +104,7 @@ public abstract class OLuceneIndexEngineAbstract<V> extends OSharedResourceAdapt
 
   @Override
   public void create(OBinarySerializer valueSerializer, boolean isAutomatic, OType[] keyTypes, boolean nullPointerSupport,
-                        OBinarySerializer keySerializer, int keySize, ODocument metadata) {
+                        OBinarySerializer keySerializer, int keySize, Set<String> clustersToIndex, ODocument metadata) {
     // initIndex(indexName, null, isAutomatic, metadata);
   }
 

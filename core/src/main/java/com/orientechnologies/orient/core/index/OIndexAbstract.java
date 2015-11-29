@@ -19,18 +19,6 @@
  */
 package com.orientechnologies.orient.core.index;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-
 import com.orientechnologies.common.collection.OMultiValue;
 import com.orientechnologies.common.concur.lock.ONewLockManager;
 import com.orientechnologies.common.concur.lock.OReadersWriterSpinLock;
@@ -63,6 +51,18 @@ import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedSt
 import com.orientechnologies.orient.core.storage.impl.local.OIndexEngineCallback;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperation;
 import com.orientechnologies.orient.core.tx.OTransactionIndexChanges.OPERATION;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 /**
  * Handles indexing when records change.
@@ -229,7 +229,7 @@ public abstract class OIndexAbstract<T> implements OIndexInternal<T>, OOrientSta
       final Boolean durableInNonTxMode = isDurableInNonTxMode();
 
       indexId = storage.addIndexEngine(name, algorithm, indexDefinition, valueSerializer, isAutomatic(), durableInNonTxMode,
-          version, getEngineProperties(), metadata);
+          version, getEngineProperties(), clustersToIndex, metadata);
       assert indexId >= 0;
 
       onIndexEngineChange(indexId);
@@ -424,7 +424,7 @@ public abstract class OIndexAbstract<T> implements OIndexInternal<T>, OOrientSta
       removeValuesContainer();
 
       indexId = storage.addIndexEngine(name, algorithm, indexDefinition, determineValueSerializer(), isAutomatic(),
-          isDurableInNonTxMode(), version, getEngineProperties(), metadata);
+          isDurableInNonTxMode(), version, getEngineProperties(), clustersToIndex, metadata);
 
       onIndexEngineChange(indexId);
 
