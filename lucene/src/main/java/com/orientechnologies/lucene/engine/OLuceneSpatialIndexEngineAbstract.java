@@ -65,9 +65,9 @@ public abstract class OLuceneSpatialIndexEngineAbstract extends OLuceneIndexEngi
   }
 
   @Override
-  public void initIndex(String indexName, String indexType, OIndexDefinition indexDefinition, boolean isAutomatic,
+  public void init(String indexName, String indexType, OIndexDefinition indexDefinition, boolean isAutomatic,
       ODocument metadata) {
-    super.initIndex(indexName, indexType, indexDefinition, isAutomatic, metadata);
+    super.init(indexName, indexType, indexDefinition, isAutomatic, metadata);
 
     strategy = createSpatialStrategy(indexDefinition, metadata);
   }
@@ -88,11 +88,6 @@ public abstract class OLuceneSpatialIndexEngineAbstract extends OLuceneIndexEngi
     IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
     return new IndexWriter(directory, iwc);
-  }
-
-  @Override
-  public void init() {
-
   }
 
   @Override
