@@ -20,6 +20,20 @@
 
 package com.orientechnologies.orient.core.storage.impl.local;
 
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+
 import com.orientechnologies.common.concur.lock.OLockManager;
 import com.orientechnologies.common.concur.lock.OModificationOperationProhibitedException;
 import com.orientechnologies.common.directmemory.ODirectMemoryPointer;
@@ -29,6 +43,7 @@ import com.orientechnologies.common.io.OIOUtils;
 import com.orientechnologies.common.log.OLogManager;
 import com.orientechnologies.common.serialization.types.OBinarySerializer;
 import com.orientechnologies.common.serialization.types.OByteSerializer;
+import com.orientechnologies.common.serialization.types.OIntegerSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.common.types.OModifiableBoolean;
 import com.orientechnologies.common.util.OCallable;
@@ -103,8 +118,10 @@ import com.orientechnologies.orient.core.storage.cache.local.OWOWCache;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.OOfflineCluster;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.OOfflineClusterException;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.OPaginatedCluster;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.ORecordOperationMetadata;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.ORecordSerializationContext;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.OStorageTransaction;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationMetadata;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.*;
@@ -112,20 +129,6 @@ import com.orientechnologies.orient.core.tx.OTransaction;
 import com.orientechnologies.orient.core.tx.OTransactionAbstract;
 import com.orientechnologies.orient.core.tx.OTxListener;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 /**
  * @author Andrey Lomakin
@@ -730,6 +733,126 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract impleme
 
   public long count(final int[] iClusterIds) {
     return count(iClusterIds, false);
+  }
+
+  /**
+   * This method finds all pages in clusters which were
+   *
+   * @param lsn
+   * @param stream
+   * @return
+   */
+  public OLogSequenceNumber recordsChangedAfterLSN(OLogSequenceNumber lsn, OutputStream stream) {
+    stateLock.acquireReadLock();
+    try {
+      if (writeAheadLog == null) {
+        return null;
+      }
+
+      final OLogSequenceNumber lastLsn = writeAheadLog.end();
+      if (lastLsn == null) {
+        return null;
+      }
+
+      // we iterate to lsn only before method call because in WAL design
+      // we can not read data from active segment
+      writeAheadLog.newSegment();
+
+      // if start record is absent there is nothing we can do
+      OWALRecord walRecord = writeAheadLog.read(lsn);
+
+      if (walRecord == null) {
+        return null;
+      }
+
+      // on first iteration we retrieve only rids from pages it is fast operation and that is enough
+      final Set<ORID> rids = new HashSet<ORID>();
+
+      dataLock.acquireSharedLock();
+      try {
+        while (lsn != null && lsn.compareTo(lastLsn) <= 0) {
+          walRecord = writeAheadLog.read(lsn);
+
+          if (walRecord instanceof OAtomicUnitEndRecord) {
+            final OAtomicUnitEndRecord atomicUnitEndRecord = (OAtomicUnitEndRecord) walRecord;
+            final Map<String, OAtomicOperationMetadata<?>> atomicOperationMetadata = atomicUnitEndRecord
+                .getAtomicOperationMetadata();
+
+            if (atomicOperationMetadata.containsKey(ORecordOperationMetadata.RID_METADATA_KEY)) {
+              final ORecordOperationMetadata recordOperationMetadata = (ORecordOperationMetadata) atomicOperationMetadata
+                  .get(ORecordOperationMetadata.RID_METADATA_KEY);
+              rids.addAll(recordOperationMetadata.getValue());
+            }
+          }
+
+          lsn = writeAheadLog.next(lsn);
+        }
+
+        // write records into the stream
+        for (ORID rid : rids) {
+          final OCluster cluster = clusters.get(rid.getClusterId());
+          final ORawBuffer rawBuffer = cluster.readRecord(rid.getClusterPosition());
+          if (rawBuffer != null) {
+            final int entrySize = OIntegerSerializer.INT_SIZE /* content size */ + OIntegerSerializer.INT_SIZE /* cluster id */
+                + OLongSerializer.LONG_SIZE /* cluster position */ + OByteSerializer.BYTE_SIZE /* delete flag */
+                + OIntegerSerializer.INT_SIZE/* record version */ + OByteSerializer.BYTE_SIZE /* record type */
+                + rawBuffer.buffer.length;
+
+            int offset = 0;
+
+            final byte[] data = new byte[entrySize];
+            OIntegerSerializer.INSTANCE.serialize(entrySize - OIntegerSerializer.INT_SIZE, data, offset);
+            offset += OIntegerSerializer.INT_SIZE;
+
+            OIntegerSerializer.INSTANCE.serialize(rid.getClusterId(), data, offset);
+            offset += OIntegerSerializer.INT_SIZE;
+
+            OLongSerializer.INSTANCE.serialize(rid.getClusterPosition(), data, offset);
+            offset += OLongSerializer.LONG_SIZE;
+
+            data[offset] = 1;
+            offset++;
+
+            OIntegerSerializer.INSTANCE.serialize(rawBuffer.version, data, offset);
+            offset += OIntegerSerializer.INT_SIZE;
+
+            data[offset] = rawBuffer.recordType;
+            offset++;
+
+            System.arraycopy(rawBuffer.buffer, 0, data, offset, rawBuffer.buffer.length);
+
+            stream.write(data);
+          } else {
+            final int entrySize = OIntegerSerializer.INT_SIZE /* content size */ + OIntegerSerializer.INT_SIZE /* cluster id */
+                + OLongSerializer.LONG_SIZE /* cluster position */ + OByteSerializer.BYTE_SIZE /* delete flag */;
+
+            int offset = 0;
+            final byte[] data = new byte[entrySize];
+
+            OIntegerSerializer.INSTANCE.serialize(entrySize, data, offset);
+            offset += OIntegerSerializer.INT_SIZE;
+
+            OIntegerSerializer.INSTANCE.serialize(rid.getClusterId(), data, offset);
+            offset += OIntegerSerializer.INT_SIZE;
+
+            OLongSerializer.INSTANCE.serialize(rid.getClusterPosition(), data, offset);
+            offset += OLongSerializer.LONG_SIZE;
+
+            data[offset] = 0;
+
+            stream.write(data);
+          }
+        }
+      } finally {
+        dataLock.releaseSharedLock();
+      }
+
+      return lastLsn;
+    } catch (IOException e) {
+      throw OException.wrapException(new OStorageException("Error of reading of records changed after LSN " + lsn), e);
+    } finally {
+      stateLock.releaseReadLock();
+    }
   }
 
   @Override

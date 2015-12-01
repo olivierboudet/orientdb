@@ -165,6 +165,9 @@ public class OLocalPaginatedStorage extends OAbstractPaginatedStorage implements
   @Override
   public List<String> backup(OutputStream out, Map<String, Object> options, final Callable<Object> callable,
       final OCommandOutputListener iOutput, final int compressionLevel, final int bufferSize) throws IOException {
+    if (out == null)
+      throw new IllegalArgumentException("Backup output is null");
+
     freeze(false);
     try {
       if (callable != null)
